@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memo.auth-challenge/1",
+  "type": "object",
+  "properties": {
+    "issuer": { "type": "string", "minLength": 1 },
+    "audience": { "type": "string", "minLength": 1 },
+    "action": { "type": "string", "minLength": 1 },
+    "nonce": { "type": "string", "minLength": 16, "maxLength": 256 },
+    "issuedAt": { "type": "integer", "minimum": 0 },
+    "expiresAt": { "type": "integer", "minimum": 0 }
+  },
+  "required": ["issuer", "audience", "action", "nonce", "issuedAt", "expiresAt"],
+  "additionalProperties": false
+}

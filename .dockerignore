@@ -1,0 +1,8 @@
+node_modules
+dist
+.data
+packages/contracts/cache
+packages/contracts/out
+deploy/*/985.json
+.git
+*.log

@@ -1,0 +1,4 @@
+interface:
+  display_name: "MEMO Mainnet Agent DID"
+  short_description: "Create and connect a local chain-985 Agent DID"
+  default_prompt: "Use $memo-agent-did-mainnet to check secure storage, ensure this installation's local DID, and show only its public status."

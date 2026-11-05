@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memo.agent-profile/1",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "description": { "type": "string", "maxLength": 2048 },
+    "endpoints": { "type": "array", "maxItems": 16, "items": { "type": "string", "format": "uri" } }
+  },
+  "required": ["name"],
+  "additionalProperties": false
+}
