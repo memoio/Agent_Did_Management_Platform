@@ -1,0 +1,20 @@
+{
+  "schema": "memo.agent-chain-action-types/1",
+  "domains": {
+    "identity": { "name": "MEMO Agent DID Registry", "version": "1", "contract": "didRegistry" },
+    "management": { "name": "MEMO Agent DID Management", "version": "1", "contract": "managementRegistry" }
+  },
+  "actions": {
+    "RegisterAgent": { "domain": "identity", "signers": ["agent"], "fields": [["identityAccount", "address"], ["identityPublicKeyHash", "bytes32"], ["documentHash", "bytes32"], ["profileHash", "bytes32"], ["expectedRevision", "uint64"], ["nonce", "uint256"], ["deadline", "uint64"]] },
+    "UpdateProfile": { "domain": "identity", "signers": ["agent"], "fields": [["identityAccount", "address"], ["profileHash", "bytes32"], ["expectedRevision", "uint64"], ["nonce", "uint256"], ["deadline", "uint64"]] },
+    "UpdateDocument": { "domain": "identity", "signers": ["agent"], "fields": [["identityAccount", "address"], ["documentHash", "bytes32"], ["expectedRevision", "uint64"], ["nonce", "uint256"], ["deadline", "uint64"]] },
+    "SuspendAgent": { "domain": "identity", "signers": ["agent"], "fields": [["identityAccount", "address"], ["expectedRevision", "uint64"], ["nonce", "uint256"], ["deadline", "uint64"]] },
+    "ResumeAgent": { "domain": "identity", "signers": ["agent"], "fields": [["identityAccount", "address"], ["expectedRevision", "uint64"], ["nonce", "uint256"], ["deadline", "uint64"]] },
+    "RevokeAgent": { "domain": "identity", "signers": ["agent"], "fields": [["identityAccount", "address"], ["expectedRevision", "uint64"], ["nonce", "uint256"], ["deadline", "uint64"]] },
+    "RevokeInstanceCredential": { "domain": "identity", "signers": ["agent"], "fields": [["identityAccount", "address"], ["credentialIdHash", "bytes32"], ["expectedRevision", "uint64"], ["nonce", "uint256"], ["deadline", "uint64"]] },
+    "ActivateRelationship": { "domain": "management", "signers": ["agent", "manager"], "fields": [["agent", "address"], ["manager", "address"], ["relationshipIdHash", "bytes32"], ["scopesHash", "bytes32"], ["issuedAt", "uint64"], ["expiresAt", "uint64"], ["discoverable", "bool"], ["expectedRevision", "uint64"], ["nonce", "uint256"], ["deadline", "uint64"]] },
+    "RenewRelationship": { "domain": "management", "signers": ["agent", "manager"], "fields": [["agent", "address"], ["manager", "address"], ["relationshipIdHash", "bytes32"], ["scopesHash", "bytes32"], ["expiresAt", "uint64"], ["discoverable", "bool"], ["expectedRevision", "uint64"], ["nonce", "uint256"], ["deadline", "uint64"]] },
+    "EndRelationship": { "domain": "management", "signers": ["actor"], "fields": [["agent", "address"], ["manager", "address"], ["relationshipIdHash", "bytes32"], ["actor", "address"], ["reasonHash", "bytes32"], ["expectedRevision", "uint64"], ["nonce", "uint256"], ["deadline", "uint64"]] },
+    "TransferRelationship": { "domain": "management", "signers": ["agent", "oldManager", "newManager"], "fields": [["agent", "address"], ["oldManager", "address"], ["newManager", "address"], ["oldRelationshipIdHash", "bytes32"], ["newRelationshipIdHash", "bytes32"], ["scopesHash", "bytes32"], ["expiresAt", "uint64"], ["discoverable", "bool"], ["expectedRevision", "uint64"], ["nonce", "uint256"], ["deadline", "uint64"]] }
+  }
+}

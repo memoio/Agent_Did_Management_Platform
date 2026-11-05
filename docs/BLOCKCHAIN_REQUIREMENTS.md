@@ -1,6 +1,6 @@
 # Agent DID 管理平台：区块链实现需求与交接
 
-> 文档状态：需求基线，目标测试链及链上技术方案待确认。当前仓库只提供 API/页面外壳，**没有合约、链客户端、Relayer、Indexer、Skill 或可用的身份服务**。本文件描述未来实现，不代表已上线。旧版链实现可从 Git 提交 `37da76aa4a725cf9b53c70c0b965fa4ffb1d1fb7` 查阅，不作为必须沿用的设计。
+> 文档状态：需求基线，目标测试链及交易传输方案待确认。当前仓库只提供 API/页面外壳，**没有合约、链客户端、Relayer、Indexer、Skill 或可用的身份服务**。本文件描述未来实现，不代表已上线。具体的团队输入、输出、字段和对接方式见[集成契约 v1](BLOCKCHAIN_INTEGRATION_CONTRACT.md)。旧版链实现可从 Git 提交 `37da76aa4a725cf9b53c70c0b965fa4ffb1d1fb7` 查阅，不作为必须沿用的设计。
 
 ## 1. 目标、范围和交付原则
 
@@ -8,7 +8,7 @@
 
 本阶段**所有部署、链查询、交易提交和端到端验收均连接远程测试链**。开发者可以在本机运行 API、页面和 Agent 客户端；不使用本地 Anvil/Hardhat 链代替测试链验收。离线单元测试可以使用模拟端口，但报告必须区分模拟结果和真实测试链证据。
 
-新工程师可以选择 EVM 普通交易、ERC-4337 或经评审的其他传输方式。以下**功能、安全和可验证性要求必须满足**；合约拆分、Bundler 产品、Gas 支付者、链 SDK 等是待评审的技术决策。若选择非 EVM 链，先明确 DID 方法、签名算法、钱包兼容性及 API 字段差异，提交协议决策再编码。
+v1 的对接基线是**独立 EVM 测试链**，交易层可采用普通 Relayer 或经评审的 ERC-4337。以下**功能、安全和可验证性要求必须满足**；合约拆分、Bundler 产品、Gas 支付者和链 SDK 是待评审的技术决策。若选择非 EVM 链，先明确 DID 方法、签名算法、钱包兼容性及 API 字段差异，提交 v2 协议决策再编码。
 
 ## 2. 开发前由区块链工程师提供的资料
 
@@ -74,7 +74,7 @@ Console 至少显示网络、DID 与身份状态、Pairing/管理关系、待签
 
 ## 5. 待实现的接口契约
 
-以下是**目标接口**，当前外壳除状态/健康接口外均未实现。正式 schema、字段类型、鉴权范围和错误码须先由平台与链工程师联合评审，客户端按版本消费。
+以下是**目标接口**，当前外壳除状态/健康接口外均未实现。v1 字段、签名和状态语义以[集成契约](BLOCKCHAIN_INTEGRATION_CONTRACT.md)及其 JSON Schema 为准；变更须先升级版本并经平台、链和 Agent 客户端共同评审。
 
 | 接口 | 使用者 | 最低输出/行为 |
 | --- | --- | --- |
@@ -85,6 +85,7 @@ Console 至少显示网络、DID 与身份状态、Pairing/管理关系、待签
 | `POST /api/v1/registration-intents`、`POST /api/v1/agent-dids` | Agent | 完整签名意图、digest、nonce、截止时间；提交签名后返回 operationId；写请求带 idempotency key |
 | `POST /api/v1/registry-action-intents`、`POST /api/v1/registry-actions` | Agent | Profile/Document/生命周期动作；与注册同等的签名和幂等校验 |
 | `POST /api/v1/management-intents`、`POST /api/v1/management-actions` | 钱包、Agent | 管理动作与双方签名；必须验证参与者、scope、期限和 revision |
+| `GET /api/v1/management-intents/:id`、`POST /api/v1/management-intents/:id/signatures` | 有权参与者 | 读取同一不可变意图，逐个验签并收集所需角色；不得回显签名字节 |
 | `GET /api/v1/operations/:id` | 有权主体 | 状态、必要的提交标识、tx/block hash、确认数、失败原因和重组标记 |
 | `GET /api/v1/agent-dids/:did` | 查询方 | 解析状态、链上证据、最终性及公开文档 |
 | `pairing-invitations`、`pairing-offers`、`pairing-exchanges` | 钱包、Agent | 一次性文件交换与关联状态；敏感 handle 仅在创建/兑换所需的受保护响应出现 |

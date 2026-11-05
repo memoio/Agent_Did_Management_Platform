@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:memo:agent-did:chain-integration:v1:normalized-event",
+  "title": "Agent DID normalized chain event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "deploymentId", "networkId", "eventType", "agentDid", "actionDigest", "revision", "nonce", "txHash", "blockNumber", "blockHash", "transactionIndex", "logIndex", "blockTimestamp", "payload"],
+  "properties": {
+    "schema": { "const": "memo.agent-chain-event/1" },
+    "deploymentId": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{8,128}$" },
+    "networkId": { "type": "string", "pattern": "^eip155:[1-9][0-9]*$" },
+    "eventType": {
+      "enum": ["AgentRegistered", "ProfileUpdated", "DocumentUpdated", "AgentStatusChanged", "InstanceCredentialRevoked", "RelationshipActivated", "RelationshipRenewed", "RelationshipEnded", "RelationshipTransferred"]
+    },
+    "agentDid": { "type": "string", "pattern": "^did:memo:agent:[1-9][0-9]*:0x[0-9a-f]{40}$" },
+    "actionDigest": { "$ref": "#/$defs/hash" },
+    "revision": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "nonce": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "txHash": { "$ref": "#/$defs/hash" },
+    "blockNumber": { "type": "integer", "minimum": 1 },
+    "blockHash": { "$ref": "#/$defs/hash" },
+    "transactionIndex": { "type": "integer", "minimum": 0 },
+    "logIndex": { "type": "integer", "minimum": 0 },
+    "blockTimestamp": { "type": "integer", "minimum": 1 },
+    "payload": { "type": "object" }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/registeredEvent" },
+    { "$ref": "#/$defs/profileEvent" },
+    { "$ref": "#/$defs/documentEvent" },
+    { "$ref": "#/$defs/statusEvent" },
+    { "$ref": "#/$defs/credentialEvent" },
+    { "$ref": "#/$defs/relationshipLiveEvent" },
+    { "$ref": "#/$defs/relationshipEndedEvent" },
+    { "$ref": "#/$defs/relationshipTransferredEvent" }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-fA-F]{64}$" },
+    "address": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+    "uint64": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "registeredEvent": {
+      "properties": {
+        "eventType": { "const": "AgentRegistered" },
+        "payload": {
+          "type": "object", "additionalProperties": false,
+          "required": ["identityAccount", "identityPublicKeyHash", "documentHash", "profileHash"],
+          "properties": {
+            "identityAccount": { "$ref": "#/$defs/address" },
+            "identityPublicKeyHash": { "$ref": "#/$defs/hash" },
+            "documentHash": { "$ref": "#/$defs/hash" },
+            "profileHash": { "$ref": "#/$defs/hash" }
+          }
+        }
+      }
+    },
+    "profileEvent": {
+      "properties": {
+        "eventType": { "const": "ProfileUpdated" },
+        "payload": {
+          "type": "object", "additionalProperties": false,
+          "required": ["profileHash"],
+          "properties": { "profileHash": { "$ref": "#/$defs/hash" } }
+        }
+      }
+    },
+    "documentEvent": {
+      "properties": {
+        "eventType": { "const": "DocumentUpdated" },
+        "payload": {
+          "type": "object", "additionalProperties": false,
+          "required": ["documentHash"],
+          "properties": { "documentHash": { "$ref": "#/$defs/hash" } }
+        }
+      }
+    },
+    "statusEvent": {
+      "properties": {
+        "eventType": { "const": "AgentStatusChanged" },
+        "payload": {
+          "type": "object", "additionalProperties": false,
+          "required": ["status"],
+          "properties": { "status": { "enum": ["ACTIVE", "SUSPENDED", "REVOKED"] } }
+        }
+      }
+    },
+    "credentialEvent": {
+      "properties": {
+        "eventType": { "const": "InstanceCredentialRevoked" },
+        "payload": {
+          "type": "object", "additionalProperties": false,
+          "required": ["credentialIdHash"],
+          "properties": { "credentialIdHash": { "$ref": "#/$defs/hash" } }
+        }
+      }
+    },
+    "relationshipLiveEvent": {
+      "properties": {
+        "eventType": { "enum": ["RelationshipActivated", "RelationshipRenewed"] },
+        "payload": {
+          "type": "object", "additionalProperties": false,
+          "required": ["manager", "relationshipIdHash", "scopesHash", "expiresAt", "discoverable"],
+          "properties": {
+            "manager": { "$ref": "#/$defs/address" },
+            "relationshipIdHash": { "$ref": "#/$defs/hash" },
+            "scopesHash": { "$ref": "#/$defs/hash" },
+            "expiresAt": { "$ref": "#/$defs/uint64" },
+            "discoverable": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "relationshipEndedEvent": {
+      "properties": {
+        "eventType": { "const": "RelationshipEnded" },
+        "payload": {
+          "type": "object", "additionalProperties": false,
+          "required": ["manager", "relationshipIdHash", "actor", "reasonHash"],
+          "properties": {
+            "manager": { "$ref": "#/$defs/address" },
+            "relationshipIdHash": { "$ref": "#/$defs/hash" },
+            "actor": { "$ref": "#/$defs/address" },
+            "reasonHash": { "$ref": "#/$defs/hash" }
+          }
+        }
+      }
+    },
+    "relationshipTransferredEvent": {
+      "properties": {
+        "eventType": { "const": "RelationshipTransferred" },
+        "payload": {
+          "type": "object", "additionalProperties": false,
+          "required": ["oldManager", "newManager", "oldRelationshipIdHash", "newRelationshipIdHash", "scopesHash", "expiresAt", "discoverable"],
+          "properties": {
+            "oldManager": { "$ref": "#/$defs/address" },
+            "newManager": { "$ref": "#/$defs/address" },
+            "oldRelationshipIdHash": { "$ref": "#/$defs/hash" },
+            "newRelationshipIdHash": { "$ref": "#/$defs/hash" },
+            "scopesHash": { "$ref": "#/$defs/hash" },
+            "expiresAt": { "$ref": "#/$defs/uint64" },
+            "discoverable": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

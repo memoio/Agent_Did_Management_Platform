@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:memo:agent-did:chain-integration:v1:deployment-manifest",
+  "title": "Agent DID testnet deployment manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "deploymentId", "environment", "network", "contracts", "finality", "transport", "sourceCommit", "createdAt"],
+  "properties": {
+    "schema": { "const": "memo.agent-chain-deployment/1" },
+    "deploymentId": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{8,128}$" },
+    "environment": { "const": "testnet" },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "caip2", "chainId", "genesisHash", "publicRpcUrl", "explorerUrl", "nativeCurrency"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "caip2": { "type": "string", "pattern": "^eip155:[1-9][0-9]*$" },
+        "chainId": { "type": "integer", "minimum": 1, "maximum": 9007199254740991, "not": { "const": 985 } },
+        "genesisHash": { "$ref": "#/$defs/hash" },
+        "publicRpcUrl": { "type": "string", "pattern": "^https://" },
+        "publicWssUrl": { "type": "string", "pattern": "^wss://" },
+        "explorerUrl": { "type": "string", "pattern": "^https://" },
+        "nativeCurrency": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "symbol", "decimals"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "symbol": { "type": "string", "minLength": 1 },
+            "decimals": { "type": "integer", "minimum": 0, "maximum": 36 }
+          }
+        }
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["didRegistry", "managementRegistry"],
+      "properties": {
+        "didRegistry": { "$ref": "#/$defs/contract" },
+        "managementRegistry": { "$ref": "#/$defs/contract" }
+      }
+    },
+    "finality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "fallbackConfirmations", "maxReorgDepth"],
+      "properties": {
+        "mode": { "enum": ["finalized-tag", "confirmations"] },
+        "fallbackConfirmations": { "type": "integer", "minimum": 1 },
+        "maxReorgDepth": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["direct-relayer", "erc4337"] },
+        "entryPoint": { "$ref": "#/$defs/entryPoint" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "erc4337" } } },
+          "then": { "required": ["entryPoint"] },
+          "else": { "not": { "required": ["entryPoint"] } }
+        }
+      ]
+    },
+    "sourceCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-fA-F]{64}$" },
+    "address": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["address", "interfaceVersion", "runtimeCodeHash", "abiSha256", "deploymentTxHash", "deploymentBlockNumber", "deploymentBlockHash", "domain"],
+      "properties": {
+        "address": { "$ref": "#/$defs/address" },
+        "interfaceVersion": { "type": "string", "minLength": 1 },
+        "runtimeCodeHash": { "$ref": "#/$defs/hash" },
+        "abiSha256": { "$ref": "#/$defs/hash" },
+        "deploymentTxHash": { "$ref": "#/$defs/hash" },
+        "deploymentBlockNumber": { "type": "integer", "minimum": 1 },
+        "deploymentBlockHash": { "$ref": "#/$defs/hash" },
+        "domain": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "version", "chainId", "verifyingContract"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "version": { "type": "string", "minLength": 1 },
+            "chainId": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+            "verifyingContract": { "$ref": "#/$defs/address" }
+          }
+        }
+      }
+    },
+    "entryPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["address", "version", "runtimeCodeHash"],
+      "properties": {
+        "address": { "$ref": "#/$defs/address" },
+        "version": { "type": "string", "minLength": 1 },
+        "runtimeCodeHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

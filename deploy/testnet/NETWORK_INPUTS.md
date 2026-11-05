@@ -1,6 +1,6 @@
 # 远程测试链资料交接表
 
-> 由区块链工程师填写。状态使用“待提供 / 已验证 / 不支持 / 不适用”。本表只放可共享的非秘密信息；私钥、助记词、API token、带鉴权参数的 RPC URL 经密钥管理器单独交付。链与交易方案尚未决定，下面的 EVM/ERC-4337 字段是**条件字段**，不是预设技术选型。
+> 由区块链工程师填写。状态使用“待提供 / 已验证 / 不支持 / 不适用”。本表只放可共享的非秘密信息；私钥、助记词、API token、带鉴权参数的 RPC URL 经密钥管理器单独交付。[集成契约 v1](../../docs/BLOCKCHAIN_INTEGRATION_CONTRACT.md)已选定独立 EVM 测试链；普通 Relayer 与 ERC-4337 交易传输仍待选择。非 EVM 链需另起 v2 设计。
 
 | 文档信息 | 值 |
 | --- | --- |
@@ -25,15 +25,16 @@
 | A10 | 合约/链上存储能力、编译器和虚拟机兼容性、部署限制 | 待提供 | 待提供 |
 | A11 | 建议交易传输方案：普通交易、ERC-4337 或其他；选择理由和依赖 | 待提供 | 待提供 |
 
-若选择 EVM/ERC-4337，再填写 EntryPoint 版本、地址与代码 hash、Bundler RPC 方法和版本、账户工厂、Gas 支付方、executor/utility 账户与运营责任。若不采用该方案，明确“不适用”，并提供等价的签名验证、交易提交和费用说明。不能直接复用旧版 chain 985 地址、代码 hash 或测试私钥。
+若选择 ERC-4337，再填写 EntryPoint 版本、地址与代码 hash、Bundler RPC 方法和版本、账户工厂、Gas 支付方、executor/utility 账户与运营责任。若采用普通 Relayer，明确 ERC-4337 项为“不适用”，并提供交易提交和费用说明。不能直接复用旧版 chain 985 地址、代码 hash 或测试私钥。
 
 ## B. 设计评审决策
 
 | 项目 | 双方确认结果 / ADR 链接 |
 | --- | --- |
-| DID 方法与网络段、地址/公钥格式、大小写与版本 | 待确认 |
+| 是否接受 v1 DID `did:memo:agent:<chainId>:<lowercase-address>` 和公钥 hash 规则；若不接受，给变更 ADR | 待签 |
+| 是否接受 v1 Profile/Document 的 JCS+SHA-256 与 scope hash 规则 | 待签 |
 | 身份注册、Profile/Document 更新、暂停/恢复/撤销的链上数据模型 | 待确认 |
-| 管理关系双签、scope、期限、nonce/revision 与过期时间 | 待确认 |
+| 是否接受 v1 管理动作签署人矩阵、scope、期限、nonce/revision 与过期时间 | 待签 |
 | 合约/链模块可升级性、管理员与暂停权限 | 待确认 |
 | 链下 Pairing 与链上管理关系的边界 | 待确认 |
 | finality、重组、链重置和重新索引策略 | 待确认 |
@@ -59,4 +60,4 @@
 | 一次真实测试链签名、提交、收据和查询证据 | 待提供 | 待验证 |
 | 运维监控、资金、重置通知和应急联系人 | 待提供 | 待验证 |
 
-完整业务需求、API 边界和验收标准见[区块链实现需求](../../docs/BLOCKCHAIN_REQUIREMENTS.md)。
+完整业务需求、API 边界和验收标准见[区块链实现需求](../../docs/BLOCKCHAIN_REQUIREMENTS.md)，字段级输入/输出见[集成契约 v1](../../docs/BLOCKCHAIN_INTEGRATION_CONTRACT.md)。
