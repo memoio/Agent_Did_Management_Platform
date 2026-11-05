@@ -6,11 +6,6 @@ coverage/
 !.env.example
 .data/
 .data-backup-*/
-packages/contracts/cache/
-packages/contracts/out/
-deploy/local/985.json
-deploy/preprod/985.json
-deploy/production/985.json
 deploy/testnet/*.json
 *.memo-offer.json
 *.memo-invitation.json

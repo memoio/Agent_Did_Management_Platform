@@ -9,12 +9,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "declaration": true,
-    "resolveJsonModule": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "useDefineForClassFields": false,
-    "noUncheckedIndexedAccess": true
+    "emitDecoratorMetadata": true
   },
-  "include": ["apps/**/*.ts", "packages/**/*.ts", "tests/**/*.ts"],
-  "exclude": ["dist", "node_modules", "packages/skill/test"]
+  "include": ["apps/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
 }

@@ -1,72 +1,32 @@
 {
-  "name": "@memo/agent-did-mainnet-stack",
-  "version": "0.1.0-preprod",
+  "name": "@memo/agent-did-management-platform",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "engines": {
-    "node": ">=22.5.0"
-  },
+  "workspaces": ["apps/*"],
+  "engines": { "node": ">=22.5.0" },
   "scripts": {
     "clean": "node scripts/clean.mjs",
-    "build": "tsc -p tsconfig.json && npm run build --workspace @memo/agent-did-mainnet-skill",
-    "start:api": "node dist/apps/api/src/main.js",
-    "start:worker": "node dist/apps/chain-worker/src/main.js",
-    "dev:api": "npm run build && node --enable-source-maps dist/apps/api/src/main.js",
-    "dev:worker": "npm run build && node --enable-source-maps dist/apps/chain-worker/src/main.js",
-    "dev:all": "node scripts/dev-all.mjs",
-    "dev:reset": "node scripts/dev-reset.mjs",
-    "chain:start": "node node_modules/@foundry-rs/anvil/bin.mjs --host 127.0.0.1 --port 9545 --chain-id 985 --block-time 1 --mnemonic 'test test test test test test test test test test test junk'",
-    "contracts:build": "node node_modules/@foundry-rs/forge/bin.mjs build",
-    "contracts:artifacts": "node scripts/compile-contract-artifacts.mjs",
-    "contracts:test": "node node_modules/@foundry-rs/forge/bin.mjs test -vv",
-    "entrypoint:verify": "node scripts/verify-entrypoint-artifact.mjs",
-    "isolation:verify": "node scripts/verify-isolation.mjs",
-    "contracts:deploy:local": "node scripts/deploy-contracts.mjs local",
-    "deploy:validate": "node scripts/validate-deployment.mjs",
-    "preflight:mainnet": "node scripts/preflight-mainnet.mjs",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/apps/api/src/main.js",
+    "dev": "npm run build && node --enable-source-maps dist/apps/api/src/main.js",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "test:chain": "vitest run tests/chain",
-    "test:reorg": "vitest run tests/reorg",
-    "test:console:e2e": "playwright test --config playwright.config.ts",
-    "test:e2e:local": "node scripts/e2e-local.mjs",
-    "skill:validate": "node scripts/validate-skill.mjs",
-    "skill:sync:verify": "node scripts/verify-skill-sync.mjs",
-    "check": "npm run build && npm run skill:sync:verify && npm run isolation:verify && npm run entrypoint:verify && npm run contracts:test && npm test && npm run skill:validate"
+    "check": "npm run build && npm test"
   },
   "dependencies": {
-    "@account-abstraction/contracts": "0.7.0",
-    "@napi-rs/keyring": "2.1.2",
     "@nestjs/common": "11.2.8",
     "@nestjs/core": "11.2.8",
     "@nestjs/platform-express": "11.2.8",
     "@nestjs/serve-static": "5.0.5",
-    "@openzeppelin/contracts": "5.7.0",
-    "@openzeppelin/contracts-paris": "npm:@openzeppelin/contracts@5.0.2",
-    "ethers": "6.17.0",
-    "permissionless": "0.5.2",
     "reflect-metadata": "0.2.2",
-    "rxjs": "7.8.2",
-    "viem": "2.57.14"
+    "rxjs": "7.8.2"
   },
   "devDependencies": {
-    "@foundry-rs/anvil": "1.7.1",
-    "@foundry-rs/cast": "1.7.1",
-    "@foundry-rs/forge": "1.7.1",
-    "@playwright/test": "1.64.1",
     "@types/node": "22.12.0",
-    "@types/supertest": "6.0.3",
-    "solc": "0.8.37",
-    "supertest": "7.1.4",
     "typescript": "5.9.3",
     "vitest": "5.0.5"
   },
   "overrides": {
-    "multer": "2.5.0",
-    "tmp": "0.2.7"
+    "multer": "2.5.0"
   }
 }

@@ -1,9 +1,0 @@
-{
-  "name": "MEMO Mainnet ERC-4337 E2E Agent",
-  "description": "Isolated chain-985 acceptance identity",
-  "capabilities": [
-    "agent-did",
-    "eip-712",
-    "erc-4337"
-  ]
-}

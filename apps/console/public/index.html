@@ -2,137 +2,26 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="MEMO Mainnet Agent DID 独立管理平台">
-  <title>MEMO Agent DID 管理平台</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent DID 管理平台 · 集成准备中</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <section id="login-screen" class="login-screen">
-    <div class="login-layout">
-      <article class="login-hero">
-          <div><p class="mono eyebrow">MEMO LABS · MAINNET 985</p><h1>Agent DID</h1><p class="hero-tagline">给每个 Agent 一个可验证的主网身份、可追溯的管理关系和可审计的 ERC-4337 运行记录。</p></div>
-        <div class="journeys">
-          <p>用户旅程 1 · 平台发起</p><div><span>钱包登录</span><i>→</i><span>下载 Invitation</span><i>→</i><span>Agent 自动注册并接受</span><i>→</i><span>双签管理</span></div>
-          <p>用户旅程 2 · Agent 发起</p><div><span>Agent 生成 Offer</span><i>→</i><span>钱包导入</span><i>→</i><span>创建管理草稿</span><i>→</i><span>双方签名</span></div>
-          <small>管理关系只说明谁在管理这个 Agent，不包含任何 Gateway 数据权限。</small>
-        </div>
-      </article>
-      <article class="login-card">
-        <h2>连接钱包登录</h2>
-        <p>系统只接受浏览器钱包插件返回的真实账户，并要求该账户签署一次性登录 Challenge。</p>
-        <div id="wallet-provider-list" class="wallet-list"></div>
-        <div class="wallet-list">
-          <button id="connect-wallet" disabled><b>检测浏览器钱包插件</b><span>等待插件</span></button>
-        </div>
-        <p id="wallet-detection-status" class="wallet-status" role="status">正在检测 EIP-1193 钱包 Provider…</p>
-        <div id="wallet-network-help" class="wallet-diagnostic hidden"></div>
-        <aside class="login-note"><b>安全边界</b><span>Console 不创建 Agent 私钥。钱包登录签名、管理 EIP-712 签名与 Agent Identity Key 相互独立。</span></aside>
-        <small class="muted">登录后可查看 Agent DID 创建、配对与双签管理指引。</small>
-      </article>
-    </div>
-  </section>
-
-  <div id="app-screen" class="app-shell hidden">
-    <aside class="sidebar">
-      <div class="sidebar-brand"><span>ID</span><div><b>Agent DID</b><small>管理平台</small></div></div>
-      <nav aria-label="主导航">
-        <button data-view="create"><span>＋</span>登记 / 创建</button>
-        <button data-view="agents" class="active"><span>☰</span>我的 Agent <i id="pending-count" class="nav-count hidden">0</i></button>
-        <button data-view="alerts"><span>⚑</span>安全告警 <i id="alert-count" class="nav-count hidden">0</i></button>
-        <button data-view="audit"><span>▤</span>审计日志</button>
-        <button data-view="chain"><span>◇</span>区块链学习</button>
-        <button data-view="guide"><span>?</span>创建指引</button>
-      </nav>
-      <div class="sidebar-bottom">
-            <div class="skill-connection"><i></i><div><b>Mainnet Skill 通道</b><small>memo.agent-cli-result/2 · chain 985</small></div></div>
-        <button id="reset-session" class="prototype-toggle">退出钱包会话</button>
-      </div>
-    </aside>
-
-    <div class="workspace">
-      <header class="topbar">
-        <span id="permission-chip" class="status-chip success">● 完整权限</span>
-        <span id="top-datadid" class="optional-label hidden"></span>
-        <span id="wallet-account" class="wallet-account"><i>—</i><code>未连接</code></span>
-        <button id="refresh" class="button">刷新</button>
-      </header>
-
-      <main class="content">
-        <section id="view-agents" class="view active-view">
-          <div id="agent-list-screen">
-            <div id="list-banners"></div>
-            <div class="page-heading"><div><p>MY AGENTS</p><h1>我的 Agent</h1><span>“身份状态”来自 Agent DID；“管理状态”来自双签 Management Relationship，两者相互独立。</span></div><button class="button primary" data-view="create">登记 / 创建 Agent</button></div>
-            <div class="segment" id="agent-filters"><button class="selected" data-filter="all">全部</button><button data-filter="pending">待处理</button><button data-filter="managed">管理中</button><button data-filter="unmanaged">未管理</button></div>
-            <article class="card table-card"><div class="table-scroll"><table><thead><tr><th>Agent</th><th>Agent DID</th><th>身份状态</th><th>管理状态</th><th>运行实例</th><th>创建时间</th><th>操作</th></tr></thead><tbody id="agents-table"></tbody></table></div></article>
-          </div>
-
-          <div id="agent-detail-screen" class="hidden">
-            <div class="page-heading detail-heading"><div><p>AGENT DETAIL</p><h1><span id="detail-name">未命名 Agent</span> <span id="detail-identity-chip" class="status-chip"></span> <span id="detail-management-chip" class="status-chip"></span></h1><code id="detail-did"></code></div><button id="back-to-list" class="button">← 我的 Agent</button></div>
-            <div class="tabs" role="tablist">
-              <button role="tab" class="selected" data-tab="overview">概览</button>
-              <button role="tab" data-tab="instances">运行实例 <i id="instance-count">0</i></button>
-              <button role="tab" data-tab="lifecycle">生命周期</button>
-              <button role="tab" data-tab="profile">Profile 与 DID 文档</button>
-              <button role="tab" data-tab="logs">操作记录</button>
-            </div>
-            <div id="detail-tab-content"></div>
-          </div>
-        </section>
-
-        <section id="view-create" class="view">
-          <div class="page-heading"><div><p>REGISTER / CREATE</p><h1>登记 / 创建 Agent</h1><span>Agent 可以在没有钱包和 DataDID 的情况下创建身份；钱包只在管理 Agent 时参与。</span></div></div>
-          <div id="create-content"></div>
-        </section>
-
-        <section id="view-alerts" class="view">
-          <div class="page-heading"><div><p>ALERTS</p><h1>安全告警</h1><span>实例到期、身份异常、管理关系状态和协议能力缺口集中展示。</span></div><button id="mark-alerts-read" class="button">全部标为已读</button></div>
-          <div id="alerts-list" class="stack"></div>
-        </section>
-
-        <section id="view-audit" class="view">
-          <div class="page-heading"><div><p>TRACEABILITY</p><h1>审计日志</h1><span>只追加、连续编号；DataDID 展示结果永不进入事件主体或负载。</span></div><div><button id="export-json" class="button">导出 JSON</button> <button id="export-csv" class="button">导出 CSV</button></div></div>
-          <div class="info-banner"><b>只追加</b><span>日志不能编辑或删除，不记录私钥、Pairing handle、文件 secret、主密钥或签名原文。</span></div>
-          <div class="audit-filters"><label>事件类型<select id="audit-type"><option value="all">全部</option></select></label><label>权威来源<select id="audit-authority"><option value="all">全部</option></select></label></div>
-          <article class="card table-card"><div class="table-scroll"><table><thead><tr><th>序号</th><th>时间</th><th>事件</th><th>主体</th><th>权威来源</th><th>详情</th></tr></thead><tbody id="audit-table"></tbody></table></div></article>
-        </section>
-
-        <section id="view-chain" class="view">
-          <div class="page-heading"><div><p>MEMO MAINNET / ERC-4337 V0.7</p><h1>区块链学习</h1><span>从 Agent EIP-712 action、UserOperation、EntryPoint 到最终交易、Gas、事件和 finality。</span></div><button id="refresh-chain" class="button">刷新链状态</button></div>
-          <div id="chain-content" class="stack"></div>
-        </section>
-
-        <section id="view-guide" class="view">
-          <div class="page-heading"><div><p>GUIDE</p><h1>如何为 Agent 创建 Agent DID</h1><span>三步完成。Agent DID 由 Agent 自己创建，不需要先有 DataDID。</span></div></div>
-          <div class="guide-grid">
-            <article class="card guide-step"><span>1</span><h2>安装独立 Skill</h2><pre>npx skills add memoio/agent_did_skill --skill memo-agent-did-mainnet
-node &lt;Skill目录&gt;/scripts/setup-runtime.mjs --json</pre><button class="button copy-command" data-copy="npx skills add memoio/agent_did_skill --skill memo-agent-did-mainnet">复制</button></article>
-            <article class="card guide-step"><span>2</span><h2>确保本地身份</h2><pre>memo-agent-mainnet doctor --json
-memo-agent-mainnet identity ensure --json
-memo-agent-mainnet identity status --json</pre><button class="button copy-command" data-copy="memo-agent-mainnet identity ensure --json">复制</button></article>
-            <article class="card guide-step"><span>3</span><h2>接受 Invitation 或创建 Offer</h2><pre>memo-agent-mainnet pair invitation accept --invitation-file invitation.json --json
-# 或 pair offer create --offer-file offer.json ...</pre><button class="button copy-command" data-copy="memo-agent-mainnet pair invitation accept --invitation-file invitation.json --json">复制</button></article>
-          </div>
-          <article class="card faq"><h2>协议边界</h2><dl><div><dt>没有 DataDID 可以吗？</dt><dd>可以。身份、配对和管理流程不依赖 DataDID；它只能是非权威展示。</dd></div><div><dt>管理关系是不是资源授权？</dt><dd>不是。Vault、Memory、Data 和 MCP 权限仍由独立 Agent Gateway 管理。</dd></div><div><dt>什么时候上链？</dt><dd>本地 ensure 不上链；注册、生命周期和管理关系在 Agent/Manager 完成 EIP-712 签名后，由 Relayer Smart Account 经 Alto 和 EntryPoint v0.7 上链。</dd></div></dl></article>
-        </section>
-      </main>
-    </div>
-  </div>
-
-  <dialog id="instance-dialog" class="modal">
-    <form method="dialog" id="instance-form">
-      <h2>签发运行实例</h2><p>Identity Key 将为新的 Instance Key 签发限时凭证，两种密钥保持分离。</p>
-      <label>实例名称<input id="instance-name" value="worker-01" required pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}"></label>
-      <label>有效期<select id="instance-ttl"><option value="1h">1 小时</option><option value="24h" selected>24 小时</option><option value="7d">7 天</option></select></label>
-      <div class="modal-actions"><button value="cancel" class="button">取消</button><button id="issue-instance" value="default" class="button primary">确认签发</button></div>
-    </form>
-  </dialog>
-
-  <dialog id="confirm-dialog" class="modal">
-    <form method="dialog"><h2 id="confirm-title">确认操作</h2><div id="confirm-body" class="confirm-body"></div><div class="modal-actions"><button value="cancel" class="button">取消</button><button id="confirm-action" value="default" class="button danger">确认</button></div></form>
-  </dialog>
-
-  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+  <main class="page">
+    <div class="eyebrow">MEMO · AGENT DID MANAGEMENT PLATFORM</div>
+    <h1>区块链集成准备中</h1>
+    <p class="intro">当前仓库已移除旧的链上实现。平台保留 API 与页面外壳，供新的区块链开发工程师按需求接入远程测试链。</p>
+    <section class="status" aria-live="polite">
+      <span class="dot"></span>
+      <div><strong id="status-title">正在读取平台状态</strong><p id="status-detail">此页面不会发起链上交易。</p></div>
+    </section>
+    <section class="grid" aria-label="待实现能力">
+      <article><span>01</span><h2>Agent 身份</h2><p>创建身份、注册 DID、解析与生命周期。</p></article>
+      <article><span>02</span><h2>双向配对</h2><p>Invitation、Offer 与钱包管理授权。</p></article>
+      <article><span>03</span><h2>链上操作</h2><p>签名、提交、确认、审计与重组恢复。</p></article>
+    </section>
+    <p class="note">上述功能均为待实现需求，不代表已经部署合约、连接测试链或提供可用的身份服务。详见仓库中的 <code>docs/BLOCKCHAIN_REQUIREMENTS.md</code>。</p>
+  </main>
   <script type="module" src="/app.js"></script>
 </body>
 </html>
