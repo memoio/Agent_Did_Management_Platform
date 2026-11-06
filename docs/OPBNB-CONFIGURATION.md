@@ -11,6 +11,7 @@
 | 备 RPC | https://opbnb-testnet-rpc.publicnode.com |
 | 浏览器 | https://opbnb-testnet.bscscan.com |
 | Gas 币 | tBNB，18 位小数 |
+| 测试 Gas / 默认部署账户 | 0x4E68a5FBa65Ca722682e173cDD800842f06f1F72，用户于 2026-11-06 指定 |
 | genesis | 0x51fa57729dfb1c27542c21b06cb72a0459c57440ceb43a465dae1307cd04fe80 |
 
 ## 还需填写的实际环境信息
@@ -19,14 +20,16 @@
 | --- | --- |
 | MEMO_CHAIN_MANIFEST_PATH | 目标 Agent 合约的真实部署清单绝对路径，含地址、签名域和链上部署证据 |
 | MEMO_CHAIN_MANIFEST_SHA256 | 部署清单的 SHA-256，使用 `0x` 前缀，与清单文件独立核对 |
-| MEMO_RELAYER_ADDRESS | 专用测试 Gas 账户公开地址，需有 tBNB |
+| MEMO_RELAYER_ADDRESS | 已填写用户指定的测试 Gas 账户，需有 tBNB |
 | MEMO_RELAYER_PRIVATE_KEY | 服务端安全注入的测试 Gas 账户密钥，也可改用 MEMO_SIGNER_MODULE_PATH 外部 signer |
 | MEMO_SUBMISSION_DIRECTORY | 仓库外绝对路径，持久保存交易记录供恢复和查询使用 |
 | MEMO_MINIMUM_BALANCE_WEI | 交易后至少保留的资金阈值，正整数 wei |
 | MEMO_GAS_PRICE_CAP_WEI / MEMO_GAS_LIMIT_CAP | 每笔价格与 Gas 上限，按实际估算和预算确定 |
 | MEMO_CHAIN_WRITES_ENABLED | 默认 false。填写上述信息并完成核验后显式设 true |
 
-当前 Agent 合约尚未部署，测试签名账户尚未指定，注册链路的远程验证待这些输入齐备后进行。现有 Memo DID 或 EAS 合约使用不同 ABI，应按其实际业务选用，Agent 清单需要与本项目 ABI 一致。
+当前 Agent 合约尚未部署。测试 Gas 账户公开地址已填写，私钥由用户后续在运行环境中配置，注册链路的远程验证待实际部署后进行。现有 Memo DID 或 EAS 合约使用不同 ABI，应按其实际业务选用，Agent 清单需要与本项目 ABI 一致。
+
+该地址也出现在现有 EAS 测试同步记录中。部署、Agent 交易与使用同一地址的 EAS 任务需串行安排，避免跨项目 nonce 冲突。MEMO_DEPLOYER_ADDRESS 默认使用同一地址，如另用部署账户，须同时配置与之匹配的签名方式。
 
 若使用本仓库部署脚本，`npm run chain:deploy` 默认预览。实际部署还需部署 ID、仓库外记录目录和最终性策略，详见 [部署说明](OPBNB-TESTNET-INTEGRATION.md)。部署可使用上述测试 Gas 私钥或外部 signer，部署地址由 MEMO_DEPLOYER_ADDRESS 校验。
 
