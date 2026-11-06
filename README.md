@@ -4,6 +4,8 @@
 
 链模块交接见 [opBNB 测试链接入说明](docs/OPBNB-TESTNET-INTEGRATION.md)，协议与权限见 [链模块协议](packages/contracts/PROTOCOL.md)。旧 chain 985 实现仅保留在历史中，不恢复旧参数，不使用本地链作为远程验收证据。
 
+接手项目时先阅读 [2026-11-06 最新项目说明与审查结果](docs/PROJECT_STATUS_OPBNB_TESTNET_2026-11-06.md)，其中区分已实现链模块、尚缺的平台业务流程和未完成的远程验收。
+
 当前配置与调用入口见 [opBNB 配置操作说明](docs/OPBNB-CONFIGURATION.md)。网络参数已有默认值。补入真实部署清单、校验哈希和测试 Gas 账户后，同一环境文件用于 API 配置查询、链上注册调用、Gas 估算和交易回执跟踪。
 
 交接依据：
