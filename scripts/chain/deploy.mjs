@@ -7,12 +7,13 @@ import {
 } from "ethers";
 import { readFile, mkdir, open, rename, unlink } from "node:fs/promises";
 import path from "node:path";
-import { pathToFileURL, fileURLToPath } from "node:url";
+import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import {
   OpbnbChainAdapter,
   sha256,
   validateManifest,
+  configuredSigner,
 } from "../../dist/packages/chain-adapter/src/index.js";
 import { providers, inspectNetwork, safeFailure } from "./network.mjs";
 
@@ -177,7 +178,8 @@ try {
       }).trim()
     )
       throw new Error("SOURCE_TREE_MUST_BE_COMMITTED");
-    if (!env.MEMO_SIGNER_MODULE_PATH) throw new Error("SIGNER_MODULE_REQUIRED");
+    if (!env.MEMO_SIGNER_MODULE_PATH && !env.MEMO_RELAYER_PRIVATE_KEY)
+      throw new Error("SIGNER_MODULE_REQUIRED");
     await mkdir(directory, { recursive: true, mode: 0o700 });
     lockPath = path.join(directory, `${fileId}.lock`);
     try {
@@ -194,12 +196,9 @@ try {
     }
     if (JSON.stringify(currentCheckpoint) !== JSON.stringify(checkpoint))
       throw new Error("DEPLOYMENT_ALREADY_STARTED");
-    const signerModule = await import(
-      pathToFileURL(path.resolve(env.MEMO_SIGNER_MODULE_PATH)).href
-    );
-    const signer = await signerModule.createSigner({
-      provider: rpcs[0],
-      keyId: env.MEMO_RELAYER_SIGNER_KEY_ID,
+    const signer = await configuredSigner(rpcs[0], {
+      ...env,
+      MEMO_RELAYER_ADDRESS: deployer,
     });
     if (getAddress(await signer.getAddress()) !== deployer)
       throw new Error("SIGNER_ADDRESS_MISMATCH");

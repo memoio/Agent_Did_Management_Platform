@@ -1,37 +1,26 @@
-import { Controller, Get, ServiceUnavailableException } from "@nestjs/common";
-
-export const INTEGRATION_STATUS = {
-  state: "AWAITING_BLOCKCHAIN_IMPLEMENTATION",
-  chainConnected: false,
-  writesEnabled: false,
-} as const;
+import { Controller, Get } from "@nestjs/common";
+import { ChainService } from "./chain.service.js";
 
 @Controller("api/v1")
 export class ApiController {
+  constructor(private readonly chain: ChainService) {}
   @Get("health")
   health() {
-    return { service: "agent-did-management-platform", ...INTEGRATION_STATUS };
+    return { service: "agent-did-management-platform", processAlive: true };
   }
 
   @Get("integration/status")
   integrationStatus() {
-    return INTEGRATION_STATUS;
+    return this.chain.status();
   }
 
   @Get("ready")
-  ready(): never {
-    throw unavailable();
+  ready() {
+    return this.chain.ready();
   }
 
   @Get("chain/config")
-  chainConfig(): never {
-    throw unavailable();
+  chainConfig() {
+    return this.chain.publicConfig();
   }
-}
-
-function unavailable(): ServiceUnavailableException {
-  return new ServiceUnavailableException({
-    code: "BLOCKCHAIN_NOT_IMPLEMENTED",
-    message: "The blockchain integration has not been implemented or verified",
-  });
 }

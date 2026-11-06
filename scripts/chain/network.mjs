@@ -1,35 +1,12 @@
-import { JsonRpcProvider, FetchRequest } from "ethers";
+import {
+  configuredProviders,
+  opbnbTestnet,
+} from "../../dist/packages/chain-adapter/src/index.js";
 
-export const network = Object.freeze({
-  name: "opBNB Testnet",
-  caip2: "eip155:5611",
-  chainId: 5611,
-  genesisHash:
-    "0x51fa57729dfb1c27542c21b06cb72a0459c57440ceb43a465dae1307cd04fe80",
-  publicRpcUrl: "https://opbnb-testnet-rpc.bnbchain.org",
-  explorerUrl: "https://opbnb-testnet.bscscan.com",
-  nativeCurrency: { name: "Test BNB", symbol: "tBNB", decimals: 18 },
-});
+export const network = opbnbTestnet;
 
 export function providers() {
-  const urls = [
-    process.env.MEMO_PRIMARY_RPC_URL || network.publicRpcUrl,
-    process.env.MEMO_SECONDARY_RPC_URL,
-  ];
-  if (!urls[1]) throw new Error("SECONDARY_RPC_REQUIRED");
-  if (new URL(urls[0]).href === new URL(urls[1]).href)
-    throw new Error("INDEPENDENT_RPC_REQUIRED");
-  return urls.map((url) => {
-    if (new URL(url).protocol !== "https:")
-      throw new Error("HTTPS_RPC_REQUIRED");
-    const request = new FetchRequest(url);
-    request.timeout = 20_000;
-    return new JsonRpcProvider(
-      request,
-      { name: "opbnb-testnet", chainId: 5611 },
-      { staticNetwork: true, batchMaxCount: 1, cacheTimeout: -1 },
-    );
-  });
+  return configuredProviders();
 }
 export async function inspectNetwork(rpcs) {
   const samples = await Promise.all(

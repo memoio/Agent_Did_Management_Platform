@@ -4,6 +4,8 @@
 
 链模块交接见 [opBNB 测试链接入说明](docs/OPBNB-TESTNET-INTEGRATION.md)，协议与权限见 [链模块协议](packages/contracts/PROTOCOL.md)。旧 chain 985 实现仅保留在历史中，不恢复旧参数，不使用本地链作为远程验收证据。
 
+当前配置与调用入口见 [opBNB 配置操作说明](docs/OPBNB-CONFIGURATION.md)。网络参数已有默认值。补入真实部署清单、校验哈希和测试 Gas 账户后，同一环境文件用于 API 配置查询、链上注册调用、Gas 估算和交易回执跟踪。
+
 交接依据：
 
 - [区块链实现需求](docs/BLOCKCHAIN_REQUIREMENTS.md)：业务能力、API/适配器边界、状态机、安全要求与验收标准。
@@ -23,7 +25,7 @@ npm run check
 npm run dev
 ```
 
-默认访问 `http://127.0.0.1:4273`。`GET /api/v1/health` 表示 API 进程可用且链功能待实现；`GET /api/v1/ready` 与 `GET /api/v1/chain/config` 返回 HTTP 503 和 `BLOCKCHAIN_NOT_IMPLEMENTED`。此前注册、解析、配对等 API 路由已撤下，不会误报成功。
+默认访问 `http://127.0.0.1:4273`。`GET /api/v1/health` 表示进程可用。`GET /api/v1/integration/status` 显示目标网络及实际配置状态。`GET /api/v1/chain/config` 验证真实部署后返回公开配置。`GET /api/v1/ready` 检查写入配置、签名服务和资金。缺少部署清单时返回 HTTP 503 和 `CHAIN_NOT_CONFIGURED`。
 
 若在服务器上绑定 `0.0.0.0`，须置于可信反向代理后并设置 `MEMO_BEHIND_TRUSTED_PROXY=true`。这个外壳没有生产身份功能；完成需求文档中的安全、存储和远程测试链验收前，不应把它作为业务服务发布。
 
@@ -42,4 +44,4 @@ deploy/testnet/NETWORK_INPUTS.md  测试链资料模板
 deploy/testnet/DELIVERY_CHECKLIST.md  跨团队交付验收模板
 ```
 
-`npm run chain:preflight` 只读核验远程网络；`npm run chain:deploy` 默认预览，只有加 `-- --execute` 并提供完整设置和外部 signer 后才发送部署交易。实际清单与签名交易检查点保存在仓库外，不提交 Git。平台 API/Worker、鉴权、Pairing、存储、Console 和 Agent 客户端由平台团队继续对接。
+`npm run chain:preflight` 只读核验远程网络；`npm run chain:deploy` 默认预览，只有加 `-- --execute` 并提供完整设置和测试 Gas 私钥或外部 signer 后才发送部署交易。`npm run chain:call -- <command> [input.json]` 使用同一配置执行基础链调用。实际清单与签名交易检查点保存在仓库外。平台业务 API、Worker、鉴权、Pairing、存储、Console 和 Agent 客户端由平台团队继续对接。

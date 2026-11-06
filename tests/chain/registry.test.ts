@@ -251,6 +251,13 @@ describe("Agent DID v1 chain module (offline)", () => {
       profileHash: hashJson({ profile: 1 }),
     });
     const signed = await signature(intent, "agent", wallet);
+    const relayerNonce = await primary.getTransactionCount(relayer.address, "pending");
+    const quote = await adapter.estimateSignedAction(intent, [signed]);
+    expect(quote.broadcast).toBe(false);
+    expect(BigInt(quote.gasLimit)).toBeGreaterThanOrEqual(BigInt(quote.gasEstimate));
+    expect(BigInt(quote.maximumExecutionFeeWei)).toBe(BigInt(quote.gasLimit) * BigInt(quote.gasPriceWei));
+    expect((await adapter.readIdentity(wallet.address)).status).toBe("NONE");
+    expect(await primary.getTransactionCount(relayer.address, "pending")).toBe(relayerNonce);
     const { result, tracked, requestId } = await send(intent, [signed]);
     expect(tracked).toMatchObject({
       state: "INCLUDED",

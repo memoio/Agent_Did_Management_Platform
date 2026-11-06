@@ -23,6 +23,7 @@ WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/apps/console/public ./apps/console/public
+COPY scripts/chain ./scripts/chain
 USER node
 EXPOSE 4273
 CMD ["node", "dist/apps/api/src/main.js"]

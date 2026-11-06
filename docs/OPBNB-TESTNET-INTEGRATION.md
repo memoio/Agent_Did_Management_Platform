@@ -2,6 +2,8 @@
 
 日期：2026-11-06。范围：链合约、内部 TypeScript 适配器、受控部署和链方测试。依据为 [需求](BLOCKCHAIN_REQUIREMENTS.md)、[对接契约](BLOCKCHAIN_INTEGRATION_CONTRACT.md)及既有机器规格。
 
+本日后续按用户要求收敛交付，当前先完成项目内测试链配置和基础调用入口，操作步骤见 [opBNB 配置说明](OPBNB-CONFIGURATION.md)。已接入 API 的公开配置/就绪检查，提供 CLI 注册、Gas 估算和交易查询。下文的完整业务接入与联合验收属于后续协作范围，部署账户及合约地址仍待补齐。
+
 ## 当前交付状态
 
 | 事实层级 | 状态 |

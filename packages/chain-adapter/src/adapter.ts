@@ -523,6 +523,35 @@ export class OpbnbChainAdapter {
       throw new ChainError("CHAIN_UNAVAILABLE", true);
     }
   }
+  async estimateSignedAction(intent: Intent, signatures: ActionSignature[]) {
+    await this.readiness();
+    await this.verifySignedAction(intent, signatures);
+    const { to, data } = this.transactionData(intent, signatures);
+    const from = await rpc(() => this.options.signer!.getAddress());
+    const gasEstimate = await rpc(() =>
+      this.options.primary.estimateGas({ from, to, data }),
+    );
+    const gasPrice = BigInt(
+      await rpc(() => this.options.primary.send("eth_gasPrice", [])),
+    );
+    const gasLimit = (gasEstimate * 120n) / 100n;
+    requireChain(
+      gasPrice > 0n &&
+        gasPrice <= this.options.gasPriceCap! &&
+        gasLimit <= this.options.gasLimitCap!,
+      "CHAIN_STATE_UNCERTAIN",
+    );
+    return {
+      from,
+      to,
+      gasEstimate: gasEstimate.toString(),
+      gasLimit: gasLimit.toString(),
+      gasPriceWei: gasPrice.toString(),
+      maximumExecutionFeeWei: (gasLimit * gasPrice).toString(),
+      l1FeeWei: null,
+      broadcast: false as const,
+    };
+  }
   async submitSignedAction(
     intent: Intent,
     signatures: ActionSignature[],
