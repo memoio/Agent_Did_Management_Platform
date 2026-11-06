@@ -6,6 +6,8 @@ COPY apps/console/package.json ./apps/console/package.json
 RUN npm ci --ignore-scripts
 COPY tsconfig.json ./
 COPY apps ./apps
+COPY packages ./packages
+COPY specs ./specs
 RUN npm run build
 
 FROM node:22.22.0-bookworm-slim AS dependencies

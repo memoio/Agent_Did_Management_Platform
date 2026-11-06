@@ -4,7 +4,7 @@
 
 | 项目信息 | 填写值 |
 | --- | --- |
-| 目标网络 / CAIP-2 / chain ID | 待填写 |
+| 目标网络 / CAIP-2 / chain ID | opBNB Testnet / eip155:5611 / 5611；用户已确认 |
 | genesis hash / 是否可能重置 | 待填写 |
 | `deploymentId` / 清单 SHA-256 | 待填写 |
 | 链工程负责人 / 平台负责人 / 运维负责人 | 待填写 |
@@ -25,13 +25,13 @@
 
 | ID | 产物与文件归属 | 最低可复核证据 | 状态 / 证据位置 |
 | --- | --- | --- | --- |
-| C-01 | `NETWORK_INPUTS.md` 网络决策 | 主备 RPC 独立性、chain ID/genesis/同高度 hash、RPC 能力、重置政策 | 待交付 |
-| C-02 | `specs/chain-integration-v1/vectors/**` 协议向量 | 每个动作 domain/types/message/digest、hash、多签、ERC-1271、错误链/nonce/过期反例；平台与客户端独立重算结果 | 待交付 |
-| C-03 | `packages/contracts/**` 合约、ABI、测试、审计 | 锁定编译器、函数/事件/错误、权限与状态表、部署字节码、运行时/ABI hash、管理员/升级策略 | 待交付 |
-| C-04 | `packages/chain-adapter/**` 适配器和测试 | 契约第 3 节全部方法、错误分类、主备 RPC、收据和事件完整性测试；不改 API/Console | 待交付 |
+| C-01 | `NETWORK_INPUTS.md` 网络决策 | 主备 RPC 独立性、chain ID/genesis/同高度 hash、RPC 能力、重置政策 | 待复核；网络预检见接入说明；正式独立性/SLA/重置政策待补 |
+| C-02 | `tests/chain/protocol-vectors.json` 协议向量 | 每个动作 domain/types/message/digest、hash、多签、ERC-1271、错误链/nonce/过期反例；平台与客户端独立重算结果 | 待复核；EOA 静态向量及 ERC-1271 本地回归已交，客户端独立验算/评审待完成 |
+| C-03 | `packages/contracts/**` 合约、ABI、测试、审计 | 锁定编译器、函数/事件/错误、权限与状态表、部署字节码、运行时/ABI hash、管理员/升级策略 | 待复核；源码/ABI/编译产物/PROTOCOL.md/离线回归已交，安全审查及实际 runtime hash 待完成 |
+| C-04 | `packages/chain-adapter/**` 适配器和测试 | 契约第 3 节全部方法、错误分类、主备 RPC、收据和事件完整性测试；不改 API/Console | 待复核；源码/离线测试已交，平台 API/Worker 尚未接入 |
 | C-05 | 受控发布工件中的清单 JSON | 符合[Schema](../../specs/chain-integration-v1/deployment-manifest.schema.json)、独立 SHA-256、部署交易与区块证据、双 RPC 代码 hash 复核 | 待交付 |
-| C-06 | 交易通道和运维说明 | direct-relayer 或 ERC-4337 选择、签名服务/KMS 条目名、资金阈值、费用/超时/监控、无私钥入库 | 待交付 |
-| C-07 | 索引与恢复手册及自动化测试 | 日志读取失败重试、游标不推进、重组回放、提交未知对账、链重置作废 | 待交付 |
+| C-06 | 交易通道和运维说明 | direct-relayer 或 ERC-4337 选择、签名服务/KMS 条目名、资金阈值、费用/超时/监控、无私钥入库 | 待交付；direct-relayer 和恢复/预算入口已实现，服务器/签名服务/资金账户由用户后续确定 |
+| C-07 | 索引与恢复手册及自动化测试 | 日志读取失败重试、游标不推进、重组回放、提交未知对账、链重置作废 | 待复核；接入说明/recovery.ts/离线故障测试已交；平台持久化回滚和真实重组未验证 |
 | C-08 | 远程测试链脱敏验收报告 | DID、digest、operationId、tx/userOp/block hash、确认与解析、UTC 时间，明确区分模拟用例 | 待交付 |
 
 ## 3. 平台团队接入步骤与输出

@@ -1,0 +1,1064 @@
+{
+  "schema": "memo.agent-offline-test-vectors/1",
+  "note": "Synthetic offline vectors only. Keys were generated ephemerally and discarded. No live deployment, user signatures or private keys.",
+  "vectors": [
+    {
+      "intent": {
+        "schema": "memo.agent-chain-intent/1",
+        "intentId": "offline-vector-RegisterAgent",
+        "deploymentId": "offline-vector-5611",
+        "actionType": "RegisterAgent",
+        "domain": {
+          "name": "MEMO Agent DID Registry",
+          "version": "1",
+          "chainId": 5611,
+          "verifyingContract": "0x1111111111111111111111111111111111111111"
+        },
+        "message": {
+          "identityAccount": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "identityPublicKeyHash": "0x9c71db96845f6fa8682ceac1d6fa776acb199b4ab03a60d284a56b966eb036a1",
+          "documentHash": "0xad44980af2bf892c5842853af2a0f5628367e2b9d129e954d04665935483cbb5",
+          "profileHash": "0xe5d3d144ff4cda69c0c3d507045d06247a5ae3433469b116bb8da85cbf288a45",
+          "expectedRevision": "0",
+          "nonce": "0",
+          "deadline": "1700000300"
+        },
+        "chainSnapshot": {
+          "blockNumber": 1,
+          "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "timestamp": 1700000000
+        },
+        "types": {
+          "RegisterAgent": [
+            {
+              "name": "identityAccount",
+              "type": "address"
+            },
+            {
+              "name": "identityPublicKeyHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "documentHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "profileHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "expectedRevision",
+              "type": "uint64"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint64"
+            }
+          ]
+        },
+        "networkId": "eip155:5611",
+        "digest": "0xf88f77164b86d6b7ce27c0f0cef3c434bf937449667b55da8ffb8a805144563e",
+        "requiredSigners": [
+          {
+            "role": "agent",
+            "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1"
+          }
+        ],
+        "createdAt": "2023-11-14T22:13:20.000Z"
+      },
+      "signatures": [
+        {
+          "role": "agent",
+          "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "signature": "0x7127bccac827f62a86b6dbb13677b5b30ede4106194eb1e2c5d65f7c0baf855f404fc2a15c5040e9d218c8f46d93d28c67c24df5d965973a622ea014f922965f1c"
+        }
+      ],
+      "negativeMutations": [
+        {
+          "field": "domain.chainId",
+          "value": 204,
+          "expected": "INVALID_SIGNATURE"
+        },
+        {
+          "field": "message.nonce",
+          "value": "1",
+          "expected": "digest/signature changes"
+        },
+        {
+          "field": "message.deadline",
+          "value": "1",
+          "expected": "ACTION_EXPIRED at sample timestamp"
+        }
+      ]
+    },
+    {
+      "intent": {
+        "schema": "memo.agent-chain-intent/1",
+        "intentId": "offline-vector-UpdateProfile",
+        "deploymentId": "offline-vector-5611",
+        "actionType": "UpdateProfile",
+        "domain": {
+          "name": "MEMO Agent DID Registry",
+          "version": "1",
+          "chainId": 5611,
+          "verifyingContract": "0x1111111111111111111111111111111111111111"
+        },
+        "message": {
+          "identityAccount": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "profileHash": "0xe5d3d144ff4cda69c0c3d507045d06247a5ae3433469b116bb8da85cbf288a45",
+          "expectedRevision": "0",
+          "nonce": "0",
+          "deadline": "1700000300"
+        },
+        "chainSnapshot": {
+          "blockNumber": 1,
+          "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "timestamp": 1700000000
+        },
+        "types": {
+          "UpdateProfile": [
+            {
+              "name": "identityAccount",
+              "type": "address"
+            },
+            {
+              "name": "profileHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "expectedRevision",
+              "type": "uint64"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint64"
+            }
+          ]
+        },
+        "networkId": "eip155:5611",
+        "digest": "0xf7b0176ec5a156eaa47fce4e80448fbd884f01953ee20a8cc5222290f96ca764",
+        "requiredSigners": [
+          {
+            "role": "agent",
+            "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1"
+          }
+        ],
+        "createdAt": "2023-11-14T22:13:20.000Z"
+      },
+      "signatures": [
+        {
+          "role": "agent",
+          "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "signature": "0xb9d45cd38779e187cda2dfc55cf70057dcb5739d6a47c320fe2e7f0ef4593afa7bef32e01dfe9433524fb74f2e0021fafba49df10a01c5648e27f70ed25686751c"
+        }
+      ],
+      "negativeMutations": [
+        {
+          "field": "domain.chainId",
+          "value": 204,
+          "expected": "INVALID_SIGNATURE"
+        },
+        {
+          "field": "message.nonce",
+          "value": "1",
+          "expected": "digest/signature changes"
+        },
+        {
+          "field": "message.deadline",
+          "value": "1",
+          "expected": "ACTION_EXPIRED at sample timestamp"
+        }
+      ]
+    },
+    {
+      "intent": {
+        "schema": "memo.agent-chain-intent/1",
+        "intentId": "offline-vector-UpdateDocument",
+        "deploymentId": "offline-vector-5611",
+        "actionType": "UpdateDocument",
+        "domain": {
+          "name": "MEMO Agent DID Registry",
+          "version": "1",
+          "chainId": 5611,
+          "verifyingContract": "0x1111111111111111111111111111111111111111"
+        },
+        "message": {
+          "identityAccount": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "documentHash": "0xad44980af2bf892c5842853af2a0f5628367e2b9d129e954d04665935483cbb5",
+          "expectedRevision": "0",
+          "nonce": "0",
+          "deadline": "1700000300"
+        },
+        "chainSnapshot": {
+          "blockNumber": 1,
+          "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "timestamp": 1700000000
+        },
+        "types": {
+          "UpdateDocument": [
+            {
+              "name": "identityAccount",
+              "type": "address"
+            },
+            {
+              "name": "documentHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "expectedRevision",
+              "type": "uint64"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint64"
+            }
+          ]
+        },
+        "networkId": "eip155:5611",
+        "digest": "0x9fb0442c4c880d686fdf50fb35fa3eb14ce72391c541a50e2f18f9d836aef55b",
+        "requiredSigners": [
+          {
+            "role": "agent",
+            "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1"
+          }
+        ],
+        "createdAt": "2023-11-14T22:13:20.000Z"
+      },
+      "signatures": [
+        {
+          "role": "agent",
+          "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "signature": "0x86a3412063fb6803860adba1738dfdc885e1c0e6bcdc5a425c261ffff20bbe696055b8b28aa34f6b5c360bae7cc7d00dfa26fe94036199182a9ea6690b0a259e1c"
+        }
+      ],
+      "negativeMutations": [
+        {
+          "field": "domain.chainId",
+          "value": 204,
+          "expected": "INVALID_SIGNATURE"
+        },
+        {
+          "field": "message.nonce",
+          "value": "1",
+          "expected": "digest/signature changes"
+        },
+        {
+          "field": "message.deadline",
+          "value": "1",
+          "expected": "ACTION_EXPIRED at sample timestamp"
+        }
+      ]
+    },
+    {
+      "intent": {
+        "schema": "memo.agent-chain-intent/1",
+        "intentId": "offline-vector-SuspendAgent",
+        "deploymentId": "offline-vector-5611",
+        "actionType": "SuspendAgent",
+        "domain": {
+          "name": "MEMO Agent DID Registry",
+          "version": "1",
+          "chainId": 5611,
+          "verifyingContract": "0x1111111111111111111111111111111111111111"
+        },
+        "message": {
+          "identityAccount": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "expectedRevision": "0",
+          "nonce": "0",
+          "deadline": "1700000300"
+        },
+        "chainSnapshot": {
+          "blockNumber": 1,
+          "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "timestamp": 1700000000
+        },
+        "types": {
+          "SuspendAgent": [
+            {
+              "name": "identityAccount",
+              "type": "address"
+            },
+            {
+              "name": "expectedRevision",
+              "type": "uint64"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint64"
+            }
+          ]
+        },
+        "networkId": "eip155:5611",
+        "digest": "0xd6e9fa9612d6f85db008f2bd45193b95b699562f5ca31b1f5014c0ae94f020a6",
+        "requiredSigners": [
+          {
+            "role": "agent",
+            "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1"
+          }
+        ],
+        "createdAt": "2023-11-14T22:13:20.000Z"
+      },
+      "signatures": [
+        {
+          "role": "agent",
+          "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "signature": "0xa9087bf527ea3c56ef7b722a83348edb1f374f50ec3f6210a0582d0748cf484b40d7829a9f18bedac36b330d68cfb6a3705234fc984e1478decb5be67084424d1c"
+        }
+      ],
+      "negativeMutations": [
+        {
+          "field": "domain.chainId",
+          "value": 204,
+          "expected": "INVALID_SIGNATURE"
+        },
+        {
+          "field": "message.nonce",
+          "value": "1",
+          "expected": "digest/signature changes"
+        },
+        {
+          "field": "message.deadline",
+          "value": "1",
+          "expected": "ACTION_EXPIRED at sample timestamp"
+        }
+      ]
+    },
+    {
+      "intent": {
+        "schema": "memo.agent-chain-intent/1",
+        "intentId": "offline-vector-ResumeAgent",
+        "deploymentId": "offline-vector-5611",
+        "actionType": "ResumeAgent",
+        "domain": {
+          "name": "MEMO Agent DID Registry",
+          "version": "1",
+          "chainId": 5611,
+          "verifyingContract": "0x1111111111111111111111111111111111111111"
+        },
+        "message": {
+          "identityAccount": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "expectedRevision": "0",
+          "nonce": "0",
+          "deadline": "1700000300"
+        },
+        "chainSnapshot": {
+          "blockNumber": 1,
+          "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "timestamp": 1700000000
+        },
+        "types": {
+          "ResumeAgent": [
+            {
+              "name": "identityAccount",
+              "type": "address"
+            },
+            {
+              "name": "expectedRevision",
+              "type": "uint64"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint64"
+            }
+          ]
+        },
+        "networkId": "eip155:5611",
+        "digest": "0x543ae1cabbda409cb5e3c800a5d145e5a86525659d70c5ae0f03ddfa95f8accf",
+        "requiredSigners": [
+          {
+            "role": "agent",
+            "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1"
+          }
+        ],
+        "createdAt": "2023-11-14T22:13:20.000Z"
+      },
+      "signatures": [
+        {
+          "role": "agent",
+          "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "signature": "0x16cf8aa2e6e00ced2292e4da1ee7805972f23de2f94e647165670d525e2f639e5af18a62ad071b54d9062822aa41314cc7fb960f8af6136c0eb323ac28582fcb1c"
+        }
+      ],
+      "negativeMutations": [
+        {
+          "field": "domain.chainId",
+          "value": 204,
+          "expected": "INVALID_SIGNATURE"
+        },
+        {
+          "field": "message.nonce",
+          "value": "1",
+          "expected": "digest/signature changes"
+        },
+        {
+          "field": "message.deadline",
+          "value": "1",
+          "expected": "ACTION_EXPIRED at sample timestamp"
+        }
+      ]
+    },
+    {
+      "intent": {
+        "schema": "memo.agent-chain-intent/1",
+        "intentId": "offline-vector-RevokeAgent",
+        "deploymentId": "offline-vector-5611",
+        "actionType": "RevokeAgent",
+        "domain": {
+          "name": "MEMO Agent DID Registry",
+          "version": "1",
+          "chainId": 5611,
+          "verifyingContract": "0x1111111111111111111111111111111111111111"
+        },
+        "message": {
+          "identityAccount": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "expectedRevision": "0",
+          "nonce": "0",
+          "deadline": "1700000300"
+        },
+        "chainSnapshot": {
+          "blockNumber": 1,
+          "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "timestamp": 1700000000
+        },
+        "types": {
+          "RevokeAgent": [
+            {
+              "name": "identityAccount",
+              "type": "address"
+            },
+            {
+              "name": "expectedRevision",
+              "type": "uint64"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint64"
+            }
+          ]
+        },
+        "networkId": "eip155:5611",
+        "digest": "0x30c6efa650ef1e4cea3f90636d35fbe185ead7875482870ba5bb90b690a300e9",
+        "requiredSigners": [
+          {
+            "role": "agent",
+            "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1"
+          }
+        ],
+        "createdAt": "2023-11-14T22:13:20.000Z"
+      },
+      "signatures": [
+        {
+          "role": "agent",
+          "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "signature": "0xbd7ec27a070bca87fe09e9734c61068eda1234c369c1fca296da269b3450008967129437ab489f8c7835eecda4d404b783fc099af81f3177eba03b59d50c45a01b"
+        }
+      ],
+      "negativeMutations": [
+        {
+          "field": "domain.chainId",
+          "value": 204,
+          "expected": "INVALID_SIGNATURE"
+        },
+        {
+          "field": "message.nonce",
+          "value": "1",
+          "expected": "digest/signature changes"
+        },
+        {
+          "field": "message.deadline",
+          "value": "1",
+          "expected": "ACTION_EXPIRED at sample timestamp"
+        }
+      ]
+    },
+    {
+      "intent": {
+        "schema": "memo.agent-chain-intent/1",
+        "intentId": "offline-vector-RevokeInstanceCredential",
+        "deploymentId": "offline-vector-5611",
+        "actionType": "RevokeInstanceCredential",
+        "domain": {
+          "name": "MEMO Agent DID Registry",
+          "version": "1",
+          "chainId": 5611,
+          "verifyingContract": "0x1111111111111111111111111111111111111111"
+        },
+        "message": {
+          "identityAccount": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "credentialIdHash": "0x01c975b43f27d696f9fd44191562915cc2867fa30e0692afcc663add43adc4be",
+          "expectedRevision": "0",
+          "nonce": "0",
+          "deadline": "1700000300"
+        },
+        "chainSnapshot": {
+          "blockNumber": 1,
+          "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "timestamp": 1700000000
+        },
+        "types": {
+          "RevokeInstanceCredential": [
+            {
+              "name": "identityAccount",
+              "type": "address"
+            },
+            {
+              "name": "credentialIdHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "expectedRevision",
+              "type": "uint64"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint64"
+            }
+          ]
+        },
+        "networkId": "eip155:5611",
+        "digest": "0x6908a02baea3c00b588ad9192b823a3167e30264295a8cfcfdf77fdcaef712ef",
+        "requiredSigners": [
+          {
+            "role": "agent",
+            "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1"
+          }
+        ],
+        "createdAt": "2023-11-14T22:13:20.000Z"
+      },
+      "signatures": [
+        {
+          "role": "agent",
+          "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "signature": "0x054266da6fcb757f4a3431c79ea91d04f17f263d7cd550e4d232a35a95b16e7e6c0cdcd275a589b56577c49f5fcc5c27c41388990f8dfee9480bea6aa97fcc4e1c"
+        }
+      ],
+      "negativeMutations": [
+        {
+          "field": "domain.chainId",
+          "value": 204,
+          "expected": "INVALID_SIGNATURE"
+        },
+        {
+          "field": "message.nonce",
+          "value": "1",
+          "expected": "digest/signature changes"
+        },
+        {
+          "field": "message.deadline",
+          "value": "1",
+          "expected": "ACTION_EXPIRED at sample timestamp"
+        }
+      ]
+    },
+    {
+      "intent": {
+        "schema": "memo.agent-chain-intent/1",
+        "intentId": "offline-vector-ActivateRelationship",
+        "deploymentId": "offline-vector-5611",
+        "actionType": "ActivateRelationship",
+        "domain": {
+          "name": "MEMO Agent DID Management",
+          "version": "1",
+          "chainId": 5611,
+          "verifyingContract": "0x2222222222222222222222222222222222222222"
+        },
+        "message": {
+          "agent": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "manager": "0x36A800BeFa829a876c590cadCB3D5462c9cC1Ec2",
+          "relationshipIdHash": "0xc601fe34ccc464b547f59bcb6123dd6143363efb5214f299624437ec370d4cb8",
+          "scopesHash": "0x8cadb671390940e358413120c4c7dc0de367c8399d4fd65eb7fee801327c869d",
+          "issuedAt": "1700000000",
+          "expiresAt": "1700003600",
+          "discoverable": false,
+          "expectedRevision": "0",
+          "nonce": "0",
+          "deadline": "1700000300"
+        },
+        "chainSnapshot": {
+          "blockNumber": 1,
+          "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "timestamp": 1700000000
+        },
+        "types": {
+          "ActivateRelationship": [
+            {
+              "name": "agent",
+              "type": "address"
+            },
+            {
+              "name": "manager",
+              "type": "address"
+            },
+            {
+              "name": "relationshipIdHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "scopesHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "issuedAt",
+              "type": "uint64"
+            },
+            {
+              "name": "expiresAt",
+              "type": "uint64"
+            },
+            {
+              "name": "discoverable",
+              "type": "bool"
+            },
+            {
+              "name": "expectedRevision",
+              "type": "uint64"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint64"
+            }
+          ]
+        },
+        "networkId": "eip155:5611",
+        "digest": "0xdf142e37953778227ea325d3225eea871fd6efa1b25320dbc0c9bb9b03890626",
+        "requiredSigners": [
+          {
+            "role": "agent",
+            "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1"
+          },
+          {
+            "role": "manager",
+            "address": "0x36A800BeFa829a876c590cadCB3D5462c9cC1Ec2"
+          }
+        ],
+        "createdAt": "2023-11-14T22:13:20.000Z"
+      },
+      "signatures": [
+        {
+          "role": "agent",
+          "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "signature": "0x5c779d8bd9393b6a4485d4316f80d24bbedbdcfbac4cbe615ea15d68ebdf0e40215e2c5d9ab2fa30dd786e2c27a0c5afba150eeeb401ebf6b55a363ad2855c281b"
+        },
+        {
+          "role": "manager",
+          "address": "0x36A800BeFa829a876c590cadCB3D5462c9cC1Ec2",
+          "signature": "0xba32eae547be319784406c20be18e1fbb869b8b0e0d48d23d68ab9143717bf573f40bb482dc6a4452368326983b024a5c9dd090376f6d11cd34c4ee0b63335f31b"
+        }
+      ],
+      "negativeMutations": [
+        {
+          "field": "domain.chainId",
+          "value": 204,
+          "expected": "INVALID_SIGNATURE"
+        },
+        {
+          "field": "message.nonce",
+          "value": "1",
+          "expected": "digest/signature changes"
+        },
+        {
+          "field": "message.deadline",
+          "value": "1",
+          "expected": "ACTION_EXPIRED at sample timestamp"
+        }
+      ]
+    },
+    {
+      "intent": {
+        "schema": "memo.agent-chain-intent/1",
+        "intentId": "offline-vector-RenewRelationship",
+        "deploymentId": "offline-vector-5611",
+        "actionType": "RenewRelationship",
+        "domain": {
+          "name": "MEMO Agent DID Management",
+          "version": "1",
+          "chainId": 5611,
+          "verifyingContract": "0x2222222222222222222222222222222222222222"
+        },
+        "message": {
+          "agent": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "manager": "0x36A800BeFa829a876c590cadCB3D5462c9cC1Ec2",
+          "relationshipIdHash": "0xc601fe34ccc464b547f59bcb6123dd6143363efb5214f299624437ec370d4cb8",
+          "scopesHash": "0x8cadb671390940e358413120c4c7dc0de367c8399d4fd65eb7fee801327c869d",
+          "expiresAt": "1700003600",
+          "discoverable": false,
+          "expectedRevision": "0",
+          "nonce": "0",
+          "deadline": "1700000300"
+        },
+        "chainSnapshot": {
+          "blockNumber": 1,
+          "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "timestamp": 1700000000
+        },
+        "types": {
+          "RenewRelationship": [
+            {
+              "name": "agent",
+              "type": "address"
+            },
+            {
+              "name": "manager",
+              "type": "address"
+            },
+            {
+              "name": "relationshipIdHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "scopesHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "expiresAt",
+              "type": "uint64"
+            },
+            {
+              "name": "discoverable",
+              "type": "bool"
+            },
+            {
+              "name": "expectedRevision",
+              "type": "uint64"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint64"
+            }
+          ]
+        },
+        "networkId": "eip155:5611",
+        "digest": "0x62ad0e079268bc4559a08f193c01059e34e2e9dbdbe8ca222e1b8aa4b7d85b4e",
+        "requiredSigners": [
+          {
+            "role": "agent",
+            "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1"
+          },
+          {
+            "role": "manager",
+            "address": "0x36A800BeFa829a876c590cadCB3D5462c9cC1Ec2"
+          }
+        ],
+        "createdAt": "2023-11-14T22:13:20.000Z"
+      },
+      "signatures": [
+        {
+          "role": "agent",
+          "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "signature": "0x9462696b9cb2875db5a60e5ecec3b38f8389c954a92de0f32964a99f946cfccf5e2028ad492729d9e6aaa0fef32c4e57409c898224bce9e892735771763beb751b"
+        },
+        {
+          "role": "manager",
+          "address": "0x36A800BeFa829a876c590cadCB3D5462c9cC1Ec2",
+          "signature": "0x2daa0e9d231bbdb10ee80b0e8410375263dbb2ef7ff4db8c2133f94513311fe67c433daac399b82f89680f504a2c68bde6cfd0b7b66146bb15107288116db3d31b"
+        }
+      ],
+      "negativeMutations": [
+        {
+          "field": "domain.chainId",
+          "value": 204,
+          "expected": "INVALID_SIGNATURE"
+        },
+        {
+          "field": "message.nonce",
+          "value": "1",
+          "expected": "digest/signature changes"
+        },
+        {
+          "field": "message.deadline",
+          "value": "1",
+          "expected": "ACTION_EXPIRED at sample timestamp"
+        }
+      ]
+    },
+    {
+      "intent": {
+        "schema": "memo.agent-chain-intent/1",
+        "intentId": "offline-vector-EndRelationship",
+        "deploymentId": "offline-vector-5611",
+        "actionType": "EndRelationship",
+        "domain": {
+          "name": "MEMO Agent DID Management",
+          "version": "1",
+          "chainId": 5611,
+          "verifyingContract": "0x2222222222222222222222222222222222222222"
+        },
+        "message": {
+          "agent": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "manager": "0x36A800BeFa829a876c590cadCB3D5462c9cC1Ec2",
+          "relationshipIdHash": "0xc601fe34ccc464b547f59bcb6123dd6143363efb5214f299624437ec370d4cb8",
+          "actor": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "reasonHash": "0xe15327e505536b39fdf039eca5b68b07fd36caf352dc41bb9ff58f4c896f07c6",
+          "expectedRevision": "0",
+          "nonce": "0",
+          "deadline": "1700000300"
+        },
+        "chainSnapshot": {
+          "blockNumber": 1,
+          "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "timestamp": 1700000000
+        },
+        "types": {
+          "EndRelationship": [
+            {
+              "name": "agent",
+              "type": "address"
+            },
+            {
+              "name": "manager",
+              "type": "address"
+            },
+            {
+              "name": "relationshipIdHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "actor",
+              "type": "address"
+            },
+            {
+              "name": "reasonHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "expectedRevision",
+              "type": "uint64"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint64"
+            }
+          ]
+        },
+        "networkId": "eip155:5611",
+        "digest": "0x249b8227d84ad041b40dd4508a4d7ae7385efd384d397d0bda5fbfe0ac6256c2",
+        "requiredSigners": [
+          {
+            "role": "actor",
+            "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1"
+          }
+        ],
+        "createdAt": "2023-11-14T22:13:20.000Z"
+      },
+      "signatures": [
+        {
+          "role": "actor",
+          "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "signature": "0x811458025d044aa5a2c57c8ee5677eeb33c9d350605dee4ec9158ac3d25cf8e32d597d847f276a292d4c4e8de7bc2f4bd33801dd4204e99d053c11dea6c438a31b"
+        }
+      ],
+      "negativeMutations": [
+        {
+          "field": "domain.chainId",
+          "value": 204,
+          "expected": "INVALID_SIGNATURE"
+        },
+        {
+          "field": "message.nonce",
+          "value": "1",
+          "expected": "digest/signature changes"
+        },
+        {
+          "field": "message.deadline",
+          "value": "1",
+          "expected": "ACTION_EXPIRED at sample timestamp"
+        }
+      ]
+    },
+    {
+      "intent": {
+        "schema": "memo.agent-chain-intent/1",
+        "intentId": "offline-vector-TransferRelationship",
+        "deploymentId": "offline-vector-5611",
+        "actionType": "TransferRelationship",
+        "domain": {
+          "name": "MEMO Agent DID Management",
+          "version": "1",
+          "chainId": 5611,
+          "verifyingContract": "0x2222222222222222222222222222222222222222"
+        },
+        "message": {
+          "agent": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "oldManager": "0x36A800BeFa829a876c590cadCB3D5462c9cC1Ec2",
+          "newManager": "0x8305fBceEB119214E0F384D897064cE56e836D4E",
+          "oldRelationshipIdHash": "0xc601fe34ccc464b547f59bcb6123dd6143363efb5214f299624437ec370d4cb8",
+          "newRelationshipIdHash": "0xcfc64541a9d537e48c6329b1c23308ab54e52ffad6ace369f6ec07eddac4b498",
+          "scopesHash": "0x8cadb671390940e358413120c4c7dc0de367c8399d4fd65eb7fee801327c869d",
+          "expiresAt": "1700003600",
+          "discoverable": false,
+          "expectedRevision": "0",
+          "nonce": "0",
+          "deadline": "1700000300"
+        },
+        "chainSnapshot": {
+          "blockNumber": 1,
+          "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "timestamp": 1700000000
+        },
+        "types": {
+          "TransferRelationship": [
+            {
+              "name": "agent",
+              "type": "address"
+            },
+            {
+              "name": "oldManager",
+              "type": "address"
+            },
+            {
+              "name": "newManager",
+              "type": "address"
+            },
+            {
+              "name": "oldRelationshipIdHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "newRelationshipIdHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "scopesHash",
+              "type": "bytes32"
+            },
+            {
+              "name": "expiresAt",
+              "type": "uint64"
+            },
+            {
+              "name": "discoverable",
+              "type": "bool"
+            },
+            {
+              "name": "expectedRevision",
+              "type": "uint64"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint64"
+            }
+          ]
+        },
+        "networkId": "eip155:5611",
+        "digest": "0xf6030f2fb349441f2f4d7c3fd0ab8faad721cac99c76095b4950e2cdb3ebacf9",
+        "requiredSigners": [
+          {
+            "role": "agent",
+            "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1"
+          },
+          {
+            "role": "oldManager",
+            "address": "0x36A800BeFa829a876c590cadCB3D5462c9cC1Ec2"
+          },
+          {
+            "role": "newManager",
+            "address": "0x8305fBceEB119214E0F384D897064cE56e836D4E"
+          }
+        ],
+        "createdAt": "2023-11-14T22:13:20.000Z"
+      },
+      "signatures": [
+        {
+          "role": "agent",
+          "address": "0xD6fA776AcB199B4ab03a60d284a56B966eB036a1",
+          "signature": "0x4a1eb78afeb290e1581507a8ccd848dda313c00978ffe8159c320b0efbb879d75d43ae14149ad68e45ddb21815bb972c3fa5ef7d3e40b7d9e7ac6388121aa78c1c"
+        },
+        {
+          "role": "oldManager",
+          "address": "0x36A800BeFa829a876c590cadCB3D5462c9cC1Ec2",
+          "signature": "0x00cb8889593fe767affd4801a4f931100ba12e92b1dcd214a0072c09ec61dd856cea1e624c7d0ac9ef621b6d8d162214a06b45b25fd161a094028133a8cb27131c"
+        },
+        {
+          "role": "newManager",
+          "address": "0x8305fBceEB119214E0F384D897064cE56e836D4E",
+          "signature": "0x8e6cdb39ed7bc773c6c3ec8d9b1fb59f681913993b6c166a6baa4afbca1143085773c7612b176e6888e78eb03dd35b9f5ff427f01b16185bb9513ef5435d71af1b"
+        }
+      ],
+      "negativeMutations": [
+        {
+          "field": "domain.chainId",
+          "value": 204,
+          "expected": "INVALID_SIGNATURE"
+        },
+        {
+          "field": "message.nonce",
+          "value": "1",
+          "expected": "digest/signature changes"
+        },
+        {
+          "field": "message.deadline",
+          "value": "1",
+          "expected": "ACTION_EXPIRED at sample timestamp"
+        }
+      ]
+    }
+  ],
+  "hashes": [
+    {
+      "input": {
+        "name": "测试 Agent",
+        "emoji": "🌱"
+      },
+      "sha256": "0xe5d3d144ff4cda69c0c3d507045d06247a5ae3433469b116bb8da85cbf288a45"
+    },
+    {
+      "scopes": [
+        "write",
+        "read",
+        "read"
+      ],
+      "sha256": "0x8cadb671390940e358413120c4c7dc0de367c8399d4fd65eb7fee801327c869d"
+    },
+    {
+      "scopes": [
+        "admin",
+        "profile.read"
+      ],
+      "sha256": "0x22592d472efbdcf22246fe70f5649f68e7e8fed9a21688f6fc4078b2db4e3aa4"
+    }
+  ]
+}

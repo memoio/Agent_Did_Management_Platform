@@ -1,6 +1,8 @@
 # Agent DID 管理平台：区块链接入基线
 
-本仓库当前是**待接入版本**。旧的 MEMO chain 985 合约、Bundler/Relayer、Worker、链上 API、嵌入式 Skill 和本地 Anvil 编排已从当前分支移除。平台只保留可构建的 HTTP API 与静态页面外壳，**没有连接任何区块链，也不能注册 DID 或发起链上操作**。
+本仓库包含 opBNB Testnet（5611）的 Agent DID/管理关系合约、TypeScript 链适配器和受控部署入口。HTTP API 与静态页面仍是待接入外壳，尚不能通过平台注册 DID。新合约尚未远程部署，平台接入与远程业务验收待完成。
+
+链模块交接见 [opBNB 测试链接入说明](docs/OPBNB-TESTNET-INTEGRATION.md)，协议与权限见 [链模块协议](packages/contracts/PROTOCOL.md)。旧 chain 985 实现仅保留在历史中，不恢复旧参数，不使用本地链作为远程验收证据。
 
 交接依据：
 
@@ -30,6 +32,9 @@ npm run dev
 ```text
 apps/api/src                 HTTP 外壳与未接入状态
 apps/console/public          集成准备页面
+packages/contracts/          Agent DID/管理关系合约、ABI、编译脚本
+packages/chain-adapter/src/   内部链读写、验签、收据与恢复辅助库
+scripts/chain/               远程只读预检、默认预览/显式部署入口
 docs/BLOCKCHAIN_REQUIREMENTS.md   新实现需求与验收
 docs/BLOCKCHAIN_INTEGRATION_CONTRACT.md  跨团队输入/输出与对接契约
 specs/chain-integration-v1/    动作字段表及部署清单、意图、事件的 JSON Schema
@@ -37,4 +42,4 @@ deploy/testnet/NETWORK_INPUTS.md  测试链资料模板
 deploy/testnet/DELIVERY_CHECKLIST.md  跨团队交付验收模板
 ```
 
-新的区块链实现应在明确网络、签名模型与接口契约之后，通过独立 PR 增加合约/链适配器、后端任务处理、客户端能力及测试。当前分支不包含任何可执行的链上写入命令。
+`npm run chain:preflight` 只读核验远程网络；`npm run chain:deploy` 默认预览，只有加 `-- --execute` 并提供完整设置和外部 signer 后才发送部署交易。实际清单与签名交易检查点保存在仓库外，不提交 Git。平台 API/Worker、鉴权、Pairing、存储、Console 和 Agent 客户端由平台团队继续对接。
