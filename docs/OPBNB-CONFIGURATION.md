@@ -1,6 +1,6 @@
 # opBNB 配置与基础调用
 
-更新于 2026-11-06。本轮交付聚焦平台的测试链配置和基础调用。配置入口为 `packages/chain-adapter/src/config.ts`，API 和命令行共用。Leader 后续对接平台业务。
+更新于 2026-11-08。本轮交付聚焦平台的测试链配置和基础调用。配置入口为 `packages/chain-adapter/src/config.ts`，API 和命令行共用。Leader 后续对接平台业务。
 
 ## 已填入的网络信息
 
@@ -11,7 +11,7 @@
 | 备 RPC | https://opbnb-testnet-rpc.publicnode.com |
 | 浏览器 | https://opbnb-testnet.bscscan.com |
 | Gas 币 | tBNB，18 位小数 |
-| 测试 Gas / 默认部署账户 | 0x4E68a5FBa65Ca722682e173cDD800842f06f1F72，用户于 2026-11-06 指定 |
+| 测试 Gas / 默认部署账户 | 0xd511f5C8A3e0A12f6119aCA7463d6f619CEf14B0，用户于 2026-11-08 指定的独立钱包 |
 | genesis | 0x51fa57729dfb1c27542c21b06cb72a0459c57440ceb43a465dae1307cd04fe80 |
 
 ## 还需填写的实际环境信息
@@ -29,7 +29,9 @@
 
 当前 Agent 合约尚未部署。测试 Gas 账户公开地址已填写，私钥由用户后续在运行环境中配置，注册链路的远程验证待实际部署后进行。现有 Memo DID 或 EAS 合约使用不同 ABI，应按其实际业务选用，Agent 清单需要与本项目 ABI 一致。
 
-该地址也出现在现有 EAS 测试同步记录中。部署、Agent 交易与使用同一地址的 EAS 任务需串行安排，避免跨项目 nonce 冲突。MEMO_DEPLOYER_ADDRESS 默认使用同一地址，如另用部署账户，须同时配置与之匹配的签名方式。
+用户已为 Agent 平台更换独立钱包，现有 EAS 任务继续使用原账户。MEMO_DEPLOYER_ADDRESS 默认使用新的 Gas 地址，如另用部署账户，须同时配置与之匹配的签名方式。
+
+用户目前持有助记词。请在自己受信任的钱包中选择上述地址对应的账户，使用钱包提供的账户私钥导出功能，再将该账户私钥配置到本机受控环境文件的 MEMO_RELAYER_PRIVATE_KEY。助记词可派生多个地址，必须核对选中的公开地址与上表一致。当前环境变量接收单账户私钥，助记词保留在钱包中。助记词和导出的私钥均不得发送到聊天、上传网页或提交仓库。若钱包不支持导出，可后续使用外部 signer 接入。
 
 若使用本仓库部署脚本，`npm run chain:deploy` 默认预览。实际部署还需部署 ID、仓库外记录目录和最终性策略，详见 [部署说明](OPBNB-TESTNET-INTEGRATION.md)。部署可使用上述测试 Gas 私钥或外部 signer，部署地址由 MEMO_DEPLOYER_ADDRESS 校验。
 
