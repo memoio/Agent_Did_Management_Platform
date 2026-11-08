@@ -18,6 +18,17 @@ it("matches the intended derived account and refuses wrong indices or passphrase
   expect(() => deriveAccount(phrase, "wrong", 0, expected)).toThrow("ADDRESS_MISMATCH");
 });
 
+it("finds matching addresses across common account paths and rejects an unrelated address", async () => {
+  const { findAccount } = await import(/* @vite-ignore */ modulePath);
+  const phrase = Mnemonic.fromEntropy("0x" + "22".repeat(16)).phrase;
+  for (const derivationPath of ["m/44'/60'/0'/0/3", "m/44'/60'/2'/0/0", "m/44'/60'/0'/4"]) {
+    const wallet = HDNodeWallet.fromPhrase(phrase, "", derivationPath);
+    expect(findAccount(phrase, "", 0, wallet.address).privateKey).toBe(wallet.privateKey);
+  }
+  const unrelated = HDNodeWallet.fromSeed(new Uint8Array(32).fill(9));
+  expect(() => findAccount(phrase, "", 0, unrelated.address)).toThrow("ADDRESS_MISMATCH");
+});
+
 it("publishes an ignored env file without overwriting existing settings", async () => {
   const { writeWalletEnvironment } = await import(/* @vite-ignore */ modulePath);
   const directory = await mkdtemp(path.join(os.tmpdir(), "agent-wallet-test-"));

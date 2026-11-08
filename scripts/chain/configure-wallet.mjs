@@ -24,6 +24,27 @@ export function deriveAccount(phrase, passphrase, index, expectedAddress) {
   return wallet;
 }
 
+export function findAccount(phrase, passphrase, index, expectedAddress) {
+  if (!Number.isSafeInteger(index) || index < 0 || index > 10000) {
+    throw new Error("INVALID_ACCOUNT_INDEX");
+  }
+  const rootWallet = HDNodeWallet.fromPhrase(
+    phrase.trim().split(/\s+/u).join(" "), passphrase, "m",
+  );
+  const expected = getAddress(expectedAddress);
+  const paths = new Set([`m/44'/60'/0'/0/${index}`]);
+  for (let account = 0; account < 50; account++) {
+    paths.add(`m/44'/60'/0'/0/${account}`);
+    paths.add(`m/44'/60'/${account}'/0/0`);
+    paths.add(`m/44'/60'/0'/${account}`);
+  }
+  for (const derivationPath of paths) {
+    const wallet = rootWallet.derivePath(derivationPath);
+    if (wallet.address === expected) return wallet;
+  }
+  throw new Error("ADDRESS_MISMATCH");
+}
+
 // A real terminal is mandatory. No command arguments, pipes or echoed readline input.
 function hiddenInput(prompt) {
   const input = process.stdin;
@@ -109,16 +130,17 @@ async function main() {
   const example = parseEnv(await readFile(path.join(root, ".env.example"), "utf8"));
   const expected = getAddress(example.MEMO_RELAYER_ADDRESS);
   console.log(`目标测试账户 ${expected}`);
-  console.log("输入仅在本机处理。使用标准 Ethereum 派生路径 m/44'/60'/0'/0/index。");
+  console.log("输入仅在本机处理，将检查常见 Ethereum 钱包路径及前 50 个账户。");
   const indexText = await hiddenInput("账户序号（首个账户为 0，直接回车默认 0）: ");
   if (indexText && !/^(0|[1-9][0-9]*)$/.test(indexText)) throw new Error("INVALID_ACCOUNT_INDEX");
   let phrase = await hiddenInput("助记词（隐藏输入）: ");
   let passphrase = await hiddenInput("BIP-39 附加口令（未设置则直接回车，区别于钱包解锁密码）: ");
   let wallet;
-  try { wallet = deriveAccount(phrase, passphrase, Number(indexText || "0"), expected); }
+  try { wallet = findAccount(phrase, passphrase, Number(indexText || "0"), expected); }
   finally { phrase = ""; passphrase = ""; }
   const filename = await writeWalletEnvironment(root, wallet);
   console.log(`地址核对通过 ${wallet.address}`);
+  console.log(`匹配的派生路径 ${wallet.path}`);
   console.log(`已配置 ${filename}。交易开关保持 false。`);
 }
 
@@ -126,6 +148,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   main().catch(error => {
     const known = new Set(["INVALID_ACCOUNT_INDEX", "ADDRESS_MISMATCH", "INTERACTIVE_TERMINAL_REQUIRED", "CANCELLED", "INPUT_TOO_LONG", "ENV_FILE_TRACKED", "ENV_FILE_UNSAFE", "ENV_FILE_ALREADY_EXISTS", "SIGNER_ALREADY_CONFIGURED", "ARGUMENTS_NOT_SUPPORTED"]);
     console.error(known.has(error.message) ? error.message : "WALLET_CONFIGURATION_FAILED");
+    if (error.message === "ADDRESS_MISMATCH") {
+      console.error("常见路径未找到目标地址。请核对助记词所属钱包、目标账户和 BIP-39 附加口令。附加口令未设置时直接回车，勿输入钱包解锁密码。");
+    }
     process.exitCode = 1;
   });
 }
