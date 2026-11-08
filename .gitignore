@@ -3,6 +3,7 @@ dist/
 coverage/
 .env
 .env.*
+.env.wallet-*
 !.env.example
 .data/
 .data-backup-*/

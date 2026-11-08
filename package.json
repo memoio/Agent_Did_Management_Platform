@@ -19,7 +19,8 @@
     "chain:compile": "node packages/contracts/compile.mjs",
     "chain:preflight": "node scripts/chain/preflight.mjs",
     "chain:deploy": "node scripts/chain/deploy.mjs",
-    "chain:call": "node scripts/chain/call.mjs"
+    "chain:call": "node scripts/chain/call.mjs",
+    "chain:wallet": "node scripts/chain/configure-wallet.mjs"
   },
   "dependencies": {
     "@nestjs/common": "11.2.8",
