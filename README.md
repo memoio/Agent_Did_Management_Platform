@@ -10,10 +10,11 @@ Leader 在 Mac 本机运行时，先执行 `npm run local:configure` 生成本�
 | --- | --- |
 | Solidity 合约、双 RPC 链适配器、部署与只读预检 | 已实现；离线编译和测试通过 |
 | API、PostgreSQL、Worker、Console、独立测试链 Skill | 已实现；本地集成测试覆盖核心签名与幂等流程 |
-| opBNB Testnet 只读网络预检 | 已通过，链 ID 和 genesis 匹配 |
-| Agent 专用 Registry 部署及真实 Agent/Manager 交易 | **待验收**：当前仓库没有部署清单，运行环境未检测到可用签名入口 |
+| opBNB Testnet 双 RPC 网络预检 | 已通过，链 ID 和 genesis 匹配 |
+| Agent 专用 Registry 部署及真实 Agent/Manager 交易 | **已通过隔离测试验收**：两份合约已部署，Agent DID 注册与 Manager 双签关系均为 `CONFIRMED`；见[公开证据](deploy/testnet/ACCEPTANCE-2026-11-09.md) |
 
 `MEMO_EAS_ADDRESS` 和 Schema UID 是既有 Memo EAS 配置，不是本系统的 Agent 专用 Registry 部署地址。
+真实部署 manifest 与 signer 保存在受控本机运行目录，不提交到 Git；其他环境不能仅靠拉取分支就获得链写入能力。
 
 ## 文档与目录
 
