@@ -3,49 +3,30 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "apps/*"
-  ],
-  "engines": {
-    "node": ">=22.5.0"
-  },
+  "workspaces": ["apps/*"],
+  "engines": { "node": ">=22.5.0" },
   "scripts": {
     "clean": "node scripts/clean.mjs",
-    "build": "npm run chain:compile && tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
     "start": "node dist/apps/api/src/main.js",
     "dev": "npm run build && node --enable-source-maps dist/apps/api/src/main.js",
     "test": "vitest run",
-    "check": "npm run build && npm test",
-    "chain:compile": "node packages/contracts/compile.mjs",
-    "chain:preflight": "node scripts/chain/preflight.mjs",
-    "chain:deploy": "node scripts/chain/deploy.mjs",
-    "chain:call": "node scripts/chain/call.mjs",
-    "chain:wallet": "node scripts/chain/configure-wallet.mjs"
+    "check": "npm run build && npm test"
   },
   "dependencies": {
     "@nestjs/common": "11.2.8",
     "@nestjs/core": "11.2.8",
     "@nestjs/platform-express": "11.2.8",
     "@nestjs/serve-static": "5.0.5",
-    "ajv": "8.20.0",
-    "ajv-formats": "3.0.1",
-    "ethers": "6.17.0",
-    "json-canonicalize": "2.0.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2"
   },
   "devDependencies": {
-    "@openzeppelin/contracts": "5.1.0",
     "@types/node": "22.12.0",
-    "ganache": "7.9.2",
-    "solc": "0.8.28",
     "typescript": "5.9.3",
     "vitest": "5.0.5"
   },
   "overrides": {
-    "multer": "2.5.0",
-    "solc": {
-      "tmp": "0.2.5"
-    }
+    "multer": "2.5.0"
   }
 }

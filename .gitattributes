@@ -1,2 +1,0 @@
-packages/contracts/artifacts/*.json text eol=lf
-tests/chain/protocol-vectors.json text eol=lf

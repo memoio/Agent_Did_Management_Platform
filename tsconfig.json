@@ -6,13 +6,12 @@
     "rootDir": ".",
     "outDir": "dist",
     "strict": true,
-    "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "declaration": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "include": ["apps/**/*.ts", "packages/chain-adapter/**/*.ts", "tests/**/*.ts"],
+  "include": ["apps/**/*.ts", "tests/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }
