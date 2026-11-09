@@ -8,6 +8,12 @@
 
 `GET /api/v1/health` 只说明进程在运行。`GET /api/v1/ready` 中 `writesEnabled=true`、`databaseReady=true`、`verified=true` 才能进行写入。已有测试 DID 和关系的只读查询保留在 `/api/v1/agent-dids/{did}` 与 `/api/v1/management/{did}`。
 
+## 钱包登录
+
+在装有钱包扩展的浏览器中打开 Console，点击“检测并连接钱包”。页面通过 EIP-6963 和兼容入口查找 MetaMask、OKX Wallet、Rabby：只找到一个时直接请求连接；找到多个时列出钱包供用户选择。选中后，钱包会要求授权账户、必要时切换到 opBNB Testnet 5611，并签署登录消息。切换账户或网络后需要重新登录。
+
+WalletConnect 是扫码连接协议，不属于浏览器扩展自动发现。当前版本预留了 `MEMO_WALLETCONNECT_PROJECT_ID` 环境变量；由于尚无 Project ID 和扫码连接集成，仅填写该变量不会启用 WalletConnect。获得 Project ID 后还需接入其客户端 SDK 和扫码弹窗，再做登录、签名及断线重连验收。
+
 ## 钱包与 Agent 的两种配对
 
 ### A. 平台 Invitation

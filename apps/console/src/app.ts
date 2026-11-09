@@ -1,15 +1,16 @@
 import { BrowserProvider, TypedDataEncoder, getAddress } from "ethers";
+import {findInjectedWallets,type InjectedProvider,type ProviderAnnouncement,type WalletOption} from "./wallet-discovery.js";
 
-type Injected={request:(args:{method:string;params?:unknown[]})=>Promise<unknown>;on?:(event:string,fn:(value:unknown)=>void)=>void};
-declare global {interface Window{ethereum?:Injected}}
+declare global {interface Window{ethereum?:InjectedProvider;okxwallet?:InjectedProvider}}
 const $=(id:string)=>document.getElementById(id) as HTMLElement;
 const value=(id:string)=>($(id) as HTMLInputElement).value.trim();
 const checked=(id:string)=>($(id) as HTMLInputElement).checked;
 const esc=(v:unknown)=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]!));
 const short=(v:unknown)=>{const s=String(v??"");return s.length>32?`${s.slice(0,20)}…${s.slice(-8)}`:s;};
 const scopes=(s:string)=>s.split(",").map(x=>x.trim()).filter(Boolean);
-const providers:{name:string;provider:Injected}[]=[];
-let injected:Injected|undefined,provider:BrowserProvider|undefined,address="",token="",dashboard:any,detail:any,offer:any,auditRows:any[]=[];
+const announcements:ProviderAnnouncement[]=[];
+let walletOptions:WalletOption[]=[],injected:InjectedProvider|undefined,provider:BrowserProvider|undefined,address="",token="",dashboard:any,detail:any,offer:any,auditRows:any[]=[];
+let accountListener:((value:unknown)=>void)|undefined,chainListener:((value:unknown)=>void)|undefined,walletBusy=false;
 let currentView="agents",currentTab="overview",currentFilter="all";
 
 function toast(message:string){const box=$("toast");box.textContent=message;box.classList.add("show");setTimeout(()=>box.classList.remove("show"),7000);}
@@ -18,28 +19,72 @@ async function api(path:string,body?:unknown,auth=false,idem?:string,method?:str
   const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error?.code||`HTTP_${response.status}`);return result.data;
 }
 async function config(){const c=await api("chain/config");if(c.network.chainId!==5611||c.network.caip2!=="eip155:5611"||!c.contracts.didRegistry?.address||!c.contracts.managementRegistry?.address)throw Error("NETWORK_OR_DEPLOYMENT_MISMATCH");return c;}
-function addProvider(name:string,p:Injected){if(!providers.some(x=>x.provider===p)){providers.push({name,provider:p});renderProviders();}}
-function renderProviders(){const list=$("provider-list");list.innerHTML=providers.length>1?providers.map((p,i)=>`<label class="check"><input type="radio" name="provider" value="${i}" ${i===0?"checked":""}>${esc(p.name)}</label>`).join(""):"";}
-window.addEventListener("eip6963:announceProvider",(e:Event)=>{const d=(e as CustomEvent).detail;if(d?.provider)addProvider(d.info?.name||"钱包",d.provider);});
-window.dispatchEvent(new Event("eip6963:requestProvider"));if(window.ethereum)addProvider("浏览器钱包",window.ethereum);
-function invalidate(){provider=undefined;injected=undefined;address="";token="";dashboard=undefined;detail=undefined;$("app-screen").classList.add("hidden");$("login-screen").classList.remove("hidden");$("wallet-status").textContent="钱包账户或网络已变更，请重新登录";}
-async function connect(){
-  const selected=Number((document.querySelector('input[name="provider"]:checked') as HTMLInputElement|null)?.value||0);
-  injected=providers[selected]?.provider;if(!injected)throw Error("请安装浏览器钱包");
+window.addEventListener("eip6963:announceProvider",(event:Event)=>{
+  const detail=(event as CustomEvent<ProviderAnnouncement>).detail;
+  if(detail?.provider?.request&&detail.info&&!announcements.some(x=>x.provider===detail.provider))announcements.push(detail);
+});
+window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+function clearProviderListeners(){
+  if(injected&&accountListener)injected.removeListener?.("accountsChanged",accountListener);
+  if(injected&&chainListener)injected.removeListener?.("chainChanged",chainListener);
+  accountListener=chainListener=undefined;
+}
+function invalidate(){
+  const previousToken=token;
+  clearProviderListeners();provider=undefined;injected=undefined;address="";token="";dashboard=undefined;detail=undefined;
+  if(previousToken)void fetch("/api/v1/wallet-session",{method:"DELETE",headers:{authorization:`Bearer ${previousToken}`}}).catch(()=>{});
+  $("app-screen").classList.add("hidden");$("login-screen").classList.remove("hidden");
+  $("wallet-status").textContent="钱包账户或网络已变更，请重新登录";
+}
+function walletChoices(){
+  const list=$("provider-list");
+  list.innerHTML=`<p>检测到多个钱包，请选择用于登录的插件：</p><div class="wallet-options">${walletOptions.map((wallet,index)=>`<button type="button" class="secondary" data-wallet-index="${index}">${esc(wallet.name)}</button>`).join("")}</div>`;
+}
+async function discoverAndConnect(){
+  if(walletBusy)return;
+  walletBusy=true;($("connect-wallet") as HTMLButtonElement).disabled=true;
+  $("wallet-status").textContent="正在检测钱包插件…";
+  try{
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+    await new Promise(resolve=>setTimeout(resolve,350));
+    walletOptions=findInjectedWallets(announcements,{ethereum:window.ethereum,okxwallet:window.okxwallet});
+    if(walletOptions.length===1){$("provider-list").innerHTML="";await connectInjected(walletOptions[0]);return;}
+    if(walletOptions.length>1){walletChoices();$("wallet-status").textContent=`检测到 ${walletOptions.length} 个钱包插件`;return;}
+    $("provider-list").innerHTML='<p class="muted">未检测到 MetaMask、OKX Wallet 或 Rabby。WalletConnect 扫码连接尚未接入。</p>';
+    $("wallet-status").textContent="未检测到支持的钱包插件";
+  }finally{walletBusy=false;($("connect-wallet") as HTMLButtonElement).disabled=false;}
+}
+async function connectInjected(selected:WalletOption){
+  if(token)return;
+  injected=selected.provider;
+  $("wallet-status").textContent=`正在连接 ${selected.name}…`;
+  try{
   const c=await config();let requested:unknown;
   try{requested=await injected.request({method:"eth_requestAccounts"});}catch{throw Error("钱包账户授权失败，请允许本站访问当前账户");}
   if(!Array.isArray(requested)||typeof requested[0]!=="string")throw Error("钱包没有返回已授权账户");
   const account=getAddress(requested[0]);
-  try{await injected.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x15eb"}]});}
-  catch(error){if((error as {code?:number}).code!==4902)throw Error("请将钱包切换到 opBNB Testnet (5611)");await injected.request({method:"wallet_addEthereumChain",params:[{chainId:"0x15eb",chainName:c.network.name,rpcUrls:[c.network.publicRpcUrl],blockExplorerUrls:[c.network.explorerUrl],nativeCurrency:c.network.nativeCurrency}]});}
+  const currentChain=await injected.request({method:"eth_chainId"}).catch(()=>null);
+  if(String(currentChain).toLowerCase()!=="0x15eb"){
+    try{await injected.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x15eb"}]});}
+    catch(error){if((error as {code?:number}).code!==4902)throw Error("请将钱包切换到 opBNB Testnet (5611)");await injected.request({method:"wallet_addEthereumChain",params:[{chainId:"0x15eb",chainName:c.network.name,rpcUrls:[c.network.publicRpcUrl],blockExplorerUrls:[c.network.explorerUrl],nativeCurrency:c.network.nativeCurrency}]});}
+  }
   const p=new BrowserProvider(injected as never);if((await p.getNetwork()).chainId!==5611n)throw Error("钱包网络不是 opBNB Testnet");
   const signer=await p.getSigner(account),challenge=await api("wallet-login-intents",{address:account});
   let signature:string;try{signature=await signer.signMessage(challenge.message);}catch{throw Error("钱包登录签名被拒绝或站点未获授权");}
   const session=await api("wallet-sessions",{challengeId:challenge.challengeId,signature});
   provider=p;address=account;token=session.token;$("wallet-status").textContent=account;$("wallet-account").textContent=account;
-  injected.on?.("accountsChanged",()=>invalidate());injected.on?.("chainChanged",()=>invalidate());
+  accountListener=()=>invalidate();chainListener=()=>invalidate();
+  injected.on?.("accountsChanged",accountListener);injected.on?.("chainChanged",chainListener);
   $("login-screen").classList.add("hidden");$("app-screen").classList.remove("hidden");
   await refresh();switchView("agents");
+  }finally{if(!token){clearProviderListeners();injected=undefined;provider=undefined;$("wallet-status").textContent="登录未完成，请重试";}}
+}
+async function connectChoice(index:number){
+  if(walletBusy)return;
+  const selected=walletOptions[index];if(!selected)throw Error("请重新检测钱包插件");
+  walletBusy=true;
+  try{await connectInjected(selected);}finally{walletBusy=false;}
 }
 function switchView(view:string){currentView=view;document.querySelectorAll<HTMLElement>(".view").forEach(x=>x.classList.toggle("hidden",x.id!==`view-${view}`));document.querySelectorAll<HTMLElement>("[data-view]").forEach(x=>x.classList.toggle("active",x.dataset.view===view));if(view==="audit")void loadAudit();if(view==="chain")void loadChain();}
 function chip(label:string,kind=""){return `<span class="chip ${kind}">${esc(label)}</span>`;}
@@ -71,7 +116,7 @@ async function createManagementAction(actionType:string){if(!detail)throw Error(
 async function confirmAction(title:string,content:string){const dialog=$("confirm-dialog") as HTMLDialogElement;$("confirm-title").textContent=title;$("confirm-text").textContent=content;dialog.showModal();return new Promise<boolean>(resolve=>dialog.addEventListener("close",()=>resolve(dialog.returnValue==="confirm"),{once:true}));}
 function exportAudit(kind:"json"|"csv"){const clean=auditRows.map(x=>({id:x.id,time:x.created_at,event:x.event_type,actor:x.actor,detail:x.detail}));if(kind==="json")download("memo-agent-audit.json",JSON.stringify(clean,null,2));else{const rows=[["id","time","event","actor","detail"],...clean.map(x=>[x.id,x.time,x.event,x.actor,JSON.stringify(x.detail)])];download("memo-agent-audit.csv",rows.map(r=>r.map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n"),"text/csv");}}
 
-document.addEventListener("click",e=>{const b=(e.target as HTMLElement).closest("button");if(!b)return;const run=async()=>{if(b.dataset.view)return switchView(b.dataset.view);if(b.dataset.filter){currentFilter=b.dataset.filter;document.querySelectorAll<HTMLElement>("[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===currentFilter));return renderAgents();}if(b.dataset.openAgent)return openAgent(b.dataset.openAgent);if(b.dataset.tab){currentTab=b.dataset.tab;return renderDetail();}if(b.dataset.signDraft)return signDraft(b.dataset.signDraft);if(b.dataset.manage)return createManagementAction(b.dataset.manage);switch(b.id){case"connect-wallet":return connect();case"logout":await api("wallet-session",undefined,true,undefined,"DELETE");return invalidate();case"refresh":return refresh();case"back-to-list":detail=undefined;$("agent-detail").classList.add("hidden");$("agent-list").classList.remove("hidden");return;case"create-invitation":return createInvitation();case"redeem-offer":return redeemOffer();case"create-intent":return createDirect();case"submit-action":return submitIntent(value("intent-id"));case"check-relationship":{const x=await api(`management/${encodeURIComponent(value("agent-did"))}`);toast(`关系状态：${x.live?"管理中":"未生效"}，Manager ${x.manager}`);return;}case"sign-action-intent":{const x=await api(`management-intents/${encodeURIComponent(value("action-intent-id"))}`,undefined,true);await verifyAndSign(x.intent);return toast("当前钱包已签署意图");}case"submit-action-intent":return submitIntent(value("action-intent-id"));case"export-json":return exportAudit("json");case"export-csv":return exportAudit("csv");}};void Promise.resolve().then(run).catch(error=>toast(`操作失败：${error.message}`));});
+document.addEventListener("click",e=>{const b=(e.target as HTMLElement).closest("button");if(!b)return;const run=async()=>{if(b.dataset.view)return switchView(b.dataset.view);if(b.dataset.filter){currentFilter=b.dataset.filter;document.querySelectorAll<HTMLElement>("[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===currentFilter));return renderAgents();}if(b.dataset.openAgent)return openAgent(b.dataset.openAgent);if(b.dataset.tab){currentTab=b.dataset.tab;return renderDetail();}if(b.dataset.walletIndex!==undefined)return connectChoice(Number(b.dataset.walletIndex));if(b.dataset.signDraft)return signDraft(b.dataset.signDraft);if(b.dataset.manage)return createManagementAction(b.dataset.manage);switch(b.id){case"connect-wallet":return discoverAndConnect();case"logout":await api("wallet-session",undefined,true,undefined,"DELETE");token="";return invalidate();case"refresh":return refresh();case"back-to-list":detail=undefined;$("agent-detail").classList.add("hidden");$("agent-list").classList.remove("hidden");return;case"create-invitation":return createInvitation();case"redeem-offer":return redeemOffer();case"create-intent":return createDirect();case"submit-action":return submitIntent(value("intent-id"));case"check-relationship":{const x=await api(`management/${encodeURIComponent(value("agent-did"))}`);toast(`关系状态：${x.live?"管理中":"未生效"}，Manager ${x.manager}`);return;}case"sign-action-intent":{const x=await api(`management-intents/${encodeURIComponent(value("action-intent-id"))}`,undefined,true);await verifyAndSign(x.intent);return toast("当前钱包已签署意图");}case"submit-action-intent":return submitIntent(value("action-intent-id"));case"export-json":return exportAudit("json");case"export-csv":return exportAudit("csv");}};void Promise.resolve().then(run).catch(error=>toast(`操作失败：${error.message}`));});
 $("offer-file").addEventListener("change",e=>{const file=(e.target as HTMLInputElement).files?.[0];if(file)void loadOffer(file).catch(error=>{offer=undefined;toast(`Offer 校验失败：${error.message}`);});});
 document.addEventListener("click",e=>{const id=(e.target as HTMLElement).closest<HTMLButtonElement>("[data-retry-draft]")?.dataset.retryDraft;if(id)void api(`management-drafts/${encodeURIComponent(id)}/retry`,{},true).then(()=>refresh()).then(()=>toast("链状态已核实，请重新签署草稿")).catch(error=>toast(`重试失败：${error.message}`));});
 void api("integration/status").then(x=>{$("chain-status").textContent=x.chainConnected?"opBNB 合约已连接":"链连接待检查";}).catch(()=>{$("chain-status").textContent="API 暂不可用";});

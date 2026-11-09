@@ -17,6 +17,7 @@ h2 { font-size: 1.15rem; margin: 1rem 0 .5rem; }
 code { color: #294f80; overflow-wrap: anywhere; }
 @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } .grid article { min-height: 0; } }
 button { cursor: pointer; border: 0; border-radius: 8px; padding: 10px 14px; margin: 8px 8px 8px 0; background: #2368d9; color: white; font-weight: 600; }
+button:disabled { cursor: wait; opacity: .65; }
 button:focus-visible, input:focus-visible { outline: 3px solid #75abff; outline-offset: 2px; }
 label { display: block; margin: 12px 0; font-size: 14px; }
 label input:not([type=checkbox]) { display: block; box-sizing: border-box; width: 100%; min-width: 0; margin-top: 5px; padding: 9px; border: 1px solid #9aa9bb; border-radius: 6px; }
@@ -29,6 +30,9 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflo
 .hero p { line-height: 1.7; }
 .journeys { margin-top: 3rem; padding: 1.3rem; border: 1px solid #7799b8; border-radius: 16px; }
 .login-card { background: white; border-radius: 18px; padding: 2rem; box-shadow: 0 24px 70px #061a3260; }
+.wallet-options { display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: .5rem; margin-top: .5rem; }
+.wallet-options button { margin: 0; text-align: left; }
+#provider-list:not(:empty) { margin-top: .75rem; }
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 220px 1fr; }
 .sidebar { background: #102f53; color: white; padding: 1.5rem; display: flex; flex-direction: column; }
 .sidebar h2 { margin: 0; font-size: 1.5rem; }
