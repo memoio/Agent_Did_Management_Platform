@@ -49,11 +49,20 @@ async function track(){
           const updated=await c.query("UPDATE operations SET state=$2,block_number=$3,block_hash=$4,confirmations=greatest(confirmations,$5),finality_source=$6,updated_at=now() WHERE id=$1 AND state IN ('SUBMITTED','INCLUDED') RETURNING intent_id",[r.id,state,result.blockNumber,result.blockHash,result.confirmations,result.finalitySource]);
           if(!updated.rowCount)return;
           if(r.state!==state)await c.query("INSERT INTO audit_events(operation_id,intent_id,event_type,detail) VALUES($1,$2,$3,$4)",[r.id,updated.rows[0].intent_id,state==="CONFIRMED"?"OPERATION_CONFIRMED":"TRANSACTION_INCLUDED",{txHash:result.txHash,blockNumber:result.blockNumber,blockHash:result.blockHash,finalitySource:result.finalitySource}]);
-          if(state==="CONFIRMED" && r.action_type==="RegisterAgent"){
+          if(state==="CONFIRMED" && ["RegisterAgent","UpdateProfile","UpdateDocument"].includes(r.action_type)){
             const record=(await c.query("SELECT profile,document,intent,agent_did FROM intents WHERE id=$1",[r.intent_id])).rows[0];
             const message=(record.intent as Intent).message;
-            await c.query("INSERT INTO agent_documents(agent_did,profile,document,profile_hash,document_hash) VALUES($1,$2,$3,$4,$5) ON CONFLICT(agent_did) DO UPDATE SET profile=excluded.profile,document=excluded.document,profile_hash=excluded.profile_hash,document_hash=excluded.document_hash,updated_at=now()",[record.agent_did,record.profile,record.document,message.profileHash,message.documentHash]);
+            await c.query("UPDATE agent_document_versions SET confirmed_at=now() WHERE intent_id=$1",[r.intent_id]);
+            if(r.action_type==="RegisterAgent")await c.query("INSERT INTO agent_documents(agent_did,profile,document,profile_hash,document_hash) VALUES($1,$2,$3,$4,$5) ON CONFLICT(agent_did) DO UPDATE SET profile=excluded.profile,document=excluded.document,profile_hash=excluded.profile_hash,document_hash=excluded.document_hash,updated_at=now()",[record.agent_did,record.profile,record.document,message.profileHash,message.documentHash]);
+            else if(r.action_type==="UpdateProfile")await c.query("UPDATE agent_documents SET profile=$2,profile_hash=$3,updated_at=now() WHERE agent_did=$1",[record.agent_did,record.profile,message.profileHash]);
+            else await c.query("UPDATE agent_documents SET document=$2,document_hash=$3,updated_at=now() WHERE agent_did=$1",[record.agent_did,record.document,message.documentHash]);
           }
+          if(state==="CONFIRMED" && r.action_type==="RevokeInstanceCredential"){
+            const record=(await c.query("SELECT context FROM intents WHERE id=$1",[r.intent_id])).rows[0];
+            const instanceId=record?.context?.credentialId;
+            if(instanceId)await c.query("UPDATE agent_instances SET state='REVOKED' WHERE instance_id=$1 AND agent_did=$2",[instanceId,r.agent_did]);
+          }
+          if(state==="CONFIRMED" && r.action_type==="ActivateRelationship")await c.query("UPDATE management_drafts SET state='CONFIRMED',updated_at=now() WHERE operation_id=$1 AND state='SUBMITTED'",[r.id]);
         });
       }
     }catch(error){
@@ -80,7 +89,40 @@ async function index(){
     await db.query("INSERT INTO index_cursor(deployment_id,block_number,block_hash) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",[id,start.blockNumber,start.blockHash]);
     rows=await db.query("SELECT block_number,block_hash FROM index_cursor WHERE deployment_id=$1",[id]);
   }
-  const next=await readNextWindow(adapter,{blockNumber:Number(rows[0].block_number),blockHash:rows[0].block_hash as string},100);
+  let next:Awaited<ReturnType<typeof readNextWindow>>;
+  try{next=await readNextWindow(adapter,{blockNumber:Number(rows[0].block_number),blockHash:rows[0].block_hash as string},100);}
+  catch(error){
+    if((error as {code?:string}).code!=="CHAIN_STATE_UNCERTAIN")throw error;
+    // A transient RPC failure leaves the cursor untouched. Rewind only after both RPCs
+    // agree that the stored cursor block has a different canonical hash.
+    const canonical=await adapter.readBlock(Number(rows[0].block_number));
+    if(canonical.blockHash===rows[0].block_hash)throw error;
+    const affected=await db.query("SELECT id,intent_id,agent_did,action_type,block_number,block_hash,state FROM operations WHERE block_number IS NOT NULL AND state IN ('INCLUDED','CONFIRMED')");
+    const orphaned:typeof affected=[];
+    for(const operation of affected){
+      const block=await adapter.readBlock(Number(operation.block_number));
+      if(block.blockHash!==operation.block_hash){
+        if(Number(rows[0].block_number)-Number(operation.block_number)>adapter.manifest.finality.maxReorgDepth)throw Error("REORG_DEPTH_EXCEEDED");
+        orphaned.push(operation);
+      }
+    }
+    const start=await adapter.readBlock(earliest-1);
+    await db.transaction(async c=>{
+      const locked=(await c.query("SELECT block_number,block_hash FROM index_cursor WHERE deployment_id=$1 FOR UPDATE",[id])).rows[0];
+      if(Number(locked.block_number)!==Number(rows[0].block_number)||locked.block_hash!==rows[0].block_hash)throw Error("CURSOR_CONFLICT");
+      await c.query("DELETE FROM chain_events WHERE deployment_id=$1",[id]);
+      await c.query("UPDATE index_cursor SET block_number=$2,block_hash=$3 WHERE deployment_id=$1",[id,start.blockNumber,start.blockHash]);
+      for(const operation of orphaned){
+        await c.query("UPDATE operations SET state='REORGED',error_code='CHAIN_REORG',updated_at=now() WHERE id=$1 AND state IN ('INCLUDED','CONFIRMED')",[operation.id]);
+        await c.query("UPDATE agent_document_versions SET confirmed_at=NULL WHERE intent_id=$1",[operation.intent_id]);
+        await c.query("UPDATE management_drafts SET state='FROZEN_REORG',updated_at=now() WHERE operation_id=$1",[operation.id]);
+        if(operation.action_type==="RegisterAgent")await c.query("UPDATE management_drafts SET state='FROZEN_REORG',updated_at=now() WHERE agent_did=$1 AND state IN ('AWAITING_WALLET_SIGNATURE','WAITING_AGENT','SUBMITTED')",[operation.agent_did]);
+        await c.query("INSERT INTO audit_events(operation_id,intent_id,event_type,detail) VALUES($1,$2,'OPERATION_REORGED',$3)",[operation.id,operation.intent_id,{previousBlockHash:operation.block_hash}]);
+      }
+      await c.query("INSERT INTO audit_events(event_type,detail) VALUES('INDEXER_REWOUND',$1)",[{deploymentId:id,previousBlockNumber:rows[0].block_number,restartBlockNumber:start.blockNumber}]);
+    });
+    return;
+  }
   if(next.idle)return;
   await db.transaction(async c=>{
     const current=(await c.query("SELECT block_number,block_hash FROM index_cursor WHERE deployment_id=$1 FOR UPDATE",[id])).rows[0];

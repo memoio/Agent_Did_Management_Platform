@@ -484,6 +484,29 @@ export class OpbnbChainAdapter {
     await this.simulate(intent, signatures);
     return { valid: true as const, signers: intent.requiredSigners };
   }
+  async verifyAddressSignature(address: string, digest: string, signature: string, agentOnly = false) {
+    await this.verifyDeployment();
+    const block = await this.agreedBlock();
+    requireChain(isHexString(signature) && isHexString(digest, 32), "INVALID_SIGNATURE");
+    const target = getAddress(address);
+    const codes = await rpc(() => Promise.all(this.providers.map(p => p.getCode(target, block.blockNumber))));
+    requireChain(codes[0] === codes[1], "CHAIN_STATE_UNCERTAIN");
+    if (agentOnly) requireChain(codes[0] === "0x", "INVALID_SIGNATURE");
+    if (codes[0] === "0x") {
+      try { requireChain(getAddress(recoverAddress(digest, signature)) === target, "INVALID_SIGNATURE"); }
+      catch { throw new ChainError("INVALID_SIGNATURE"); }
+      return { valid: true as const, source: block };
+    }
+    const checker = new Interface(["function isValidSignature(bytes32,bytes) view returns(bytes4)"]);
+    const data = checker.encodeFunctionData("isValidSignature", [digest, signature]);
+    let answers: string[];
+    try { answers = await Promise.all(this.providers.map(p => p.call({to: target,data,blockTag:block.blockNumber}))); }
+    catch(error) { if ((error as {code?:string}).code === "CALL_EXCEPTION") throw new ChainError("INVALID_SIGNATURE"); throw new ChainError("CHAIN_UNAVAILABLE",true); }
+    requireChain(answers[0] === answers[1], "CHAIN_STATE_UNCERTAIN");
+    try { requireChain(checker.decodeFunctionResult("isValidSignature",answers[0])[0] === "0x1626ba7e", "INVALID_SIGNATURE"); }
+    catch { throw new ChainError("INVALID_SIGNATURE"); }
+    return { valid: true as const, source: block };
+  }
   private transactionData(intent: Intent, signatures: ActionSignature[]) {
     const { key } = this.checkedIntent(intent);
     const args = intent.requiredSigners.map(

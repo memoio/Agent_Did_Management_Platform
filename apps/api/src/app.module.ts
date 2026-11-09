@@ -5,6 +5,7 @@ import { ApiController } from "./api.controller.js";
 import { ChainService } from "./chain.service.js";
 import { PlatformDb } from "./db.js";
 import { PlatformService } from "./platform.service.js";
+import { PairingService } from "./pairing.service.js";
 
 @Module({
   imports: [
@@ -14,6 +15,6 @@ import { PlatformService } from "./platform.service.js";
     }),
   ],
   controllers: [ApiController],
-  providers: [ChainService, PlatformDb, PlatformService],
+  providers: [ChainService, PlatformDb, PlatformService, PairingService],
 })
 export class AppModule {}
