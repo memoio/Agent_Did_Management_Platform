@@ -1,87 +1,77 @@
 import { BrowserProvider, TypedDataEncoder, getAddress } from "ethers";
 
-declare global { interface Window { ethereum?: {request:(args:{method:string;params?:unknown[]})=>Promise<unknown>} } }
-const el=(id:string)=>document.getElementById(id) as HTMLElement;
-const value=(id:string)=>(el(id) as HTMLInputElement).value.trim();
-const result=el("result");
-let provider:BrowserProvider|undefined, address="",token="";
+type Injected={request:(args:{method:string;params?:unknown[]})=>Promise<unknown>;on?:(event:string,fn:(value:unknown)=>void)=>void};
+declare global {interface Window{ethereum?:Injected}}
+const $=(id:string)=>document.getElementById(id) as HTMLElement;
+const value=(id:string)=>($(id) as HTMLInputElement).value.trim();
+const checked=(id:string)=>($(id) as HTMLInputElement).checked;
+const esc=(v:unknown)=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]!));
+const short=(v:unknown)=>{const s=String(v??"");return s.length>32?`${s.slice(0,20)}…${s.slice(-8)}`:s;};
+const scopes=(s:string)=>s.split(",").map(x=>x.trim()).filter(Boolean);
+const providers:{name:string;provider:Injected}[]=[];
+let injected:Injected|undefined,provider:BrowserProvider|undefined,address="",token="",dashboard:any,detail:any,offer:any,auditRows:any[]=[];
+let currentView="agents",currentTab="overview",currentFilter="all";
 
-async function api(path:string,body?:unknown,auth=false,idem=false){
-  const response=await fetch(`/api/v1/${path}`,{method:body===undefined?"GET":"POST",headers:{...(body===undefined?{}:{"content-type":"application/json"}),...(auth?{authorization:`Bearer ${token}`}:{ }),...(idem?{"idempotency-key":crypto.randomUUID()}:{})},body:body===undefined?undefined:JSON.stringify(body),cache:"no-store"});
-  const payload=await response.json();
-  if(!response.ok||!payload.ok)throw Error(payload.error?.code||`HTTP_${response.status}`);
-  return payload.data;
+function toast(message:string){const box=$("toast");box.textContent=message;box.classList.add("show");setTimeout(()=>box.classList.remove("show"),7000);}
+async function api(path:string,body?:unknown,auth=false,idem?:string,method?:string){
+  const response=await fetch(`/api/v1/${path}`,{method:method??(body===undefined?"GET":"POST"),headers:{...(body===undefined?{}:{"content-type":"application/json"}),...(auth?{authorization:`Bearer ${token}`}:{ }),...(idem?{"idempotency-key":idem}:{})},body:body===undefined?undefined:JSON.stringify(body),cache:"no-store"});
+  const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error?.code||`HTTP_${response.status}`);return result.data;
 }
-function show(data:unknown){result.textContent=typeof data==="string"?data:JSON.stringify(data,null,2);}
-function rpcCode(error:unknown):number|undefined{
-  let current:unknown=error;
-  for(let n=0;n<4&&current&&typeof current==="object";n++){
-    const detail=current as {code?:unknown;error?:unknown;info?:{error?:unknown};cause?:unknown};
-    if(typeof detail.code==="number")return detail.code;
-    current=detail.error??detail.info?.error??detail.cause;
-  }
-  return undefined;
-}
-async function network(){
-  const config=await api("chain/config");
-  if(config.network.chainId!==5611||config.network.caip2!=="eip155:5611"||!config.contracts.managementRegistry?.address)throw Error("NETWORK_OR_DEPLOYMENT_MISMATCH");
-  return config;
-}
+async function config(){const c=await api("chain/config");if(c.network.chainId!==5611||c.network.caip2!=="eip155:5611"||!c.contracts.didRegistry?.address||!c.contracts.managementRegistry?.address)throw Error("NETWORK_OR_DEPLOYMENT_MISMATCH");return c;}
+function addProvider(name:string,p:Injected){if(!providers.some(x=>x.provider===p)){providers.push({name,provider:p});renderProviders();}}
+function renderProviders(){const list=$("provider-list");list.innerHTML=providers.length>1?providers.map((p,i)=>`<label class="check"><input type="radio" name="provider" value="${i}" ${i===0?"checked":""}>${esc(p.name)}</label>`).join(""):"";}
+window.addEventListener("eip6963:announceProvider",(e:Event)=>{const d=(e as CustomEvent).detail;if(d?.provider)addProvider(d.info?.name||"钱包",d.provider);});
+window.dispatchEvent(new Event("eip6963:requestProvider"));if(window.ethereum)addProvider("浏览器钱包",window.ethereum);
+function invalidate(){provider=undefined;injected=undefined;address="";token="";dashboard=undefined;detail=undefined;$("app-screen").classList.add("hidden");$("login-screen").classList.remove("hidden");$("wallet-status").textContent="钱包账户或网络已变更，请重新登录";}
 async function connect(){
-  if(!window.ethereum)throw Error("请安装支持 EIP-712 的浏览器钱包");
-  provider=undefined;address="";token="";el("wallet-status").textContent="未连接";
-  const config=await network();
-  let requested:unknown;
-  try{requested=await window.ethereum.request({method:"eth_requestAccounts"});}
-  catch(error){throw Error(rpcCode(error)===4001?"请在钱包中允许此站点连接账户":"钱包账户授权失败，请在钱包中允许 127.0.0.1:4273 访问该账户");}
+  const selected=Number((document.querySelector('input[name="provider"]:checked') as HTMLInputElement|null)?.value||0);
+  injected=providers[selected]?.provider;if(!injected)throw Error("请安装浏览器钱包");
+  const c=await config();let requested:unknown;
+  try{requested=await injected.request({method:"eth_requestAccounts"});}catch{throw Error("钱包账户授权失败，请允许本站访问当前账户");}
   if(!Array.isArray(requested)||typeof requested[0]!=="string")throw Error("钱包没有返回已授权账户");
-  const selected=getAddress(requested[0]);
-  try{await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x15eb"}]});}
-  catch(error){
-    if(rpcCode(error)!==4902)throw Error("切换 opBNB Testnet 失败，请在钱包中确认网络切换");
-    await window.ethereum.request({method:"wallet_addEthereumChain",params:[{chainId:"0x15eb",chainName:config.network.name,rpcUrls:[config.network.publicRpcUrl],blockExplorerUrls:[config.network.explorerUrl],nativeCurrency:config.network.nativeCurrency}]});
-  }
-  const connected=new BrowserProvider(window.ethereum as never);
-  if((await connected.getNetwork()).chainId!==5611n)throw Error("钱包当前网络不是 opBNB Testnet (5611)");
-  const accounts=await connected.send("eth_accounts",[]) as string[];
-  if(!accounts.some(account=>getAddress(account)===selected))throw Error("钱包尚未授权当前账户，请重新连接");
-  const signer=await connected.getSigner(selected);
-  const challenge=await api("wallet-login-intents",{address:selected});
-  let signature:string;
-  try{signature=await signer.signMessage(challenge.message);}
-  catch(error){
-    const code=rpcCode(error);
-    throw Error(code===4100?"钱包未授权登录签名。请在钱包扩展中允许 127.0.0.1:4273 使用当前账户，然后重新连接":code===4001?"已取消钱包登录签名":"钱包登录签名失败，请检查当前账户的站点权限");
-  }
+  const account=getAddress(requested[0]);
+  try{await injected.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x15eb"}]});}
+  catch(error){if((error as {code?:number}).code!==4902)throw Error("请将钱包切换到 opBNB Testnet (5611)");await injected.request({method:"wallet_addEthereumChain",params:[{chainId:"0x15eb",chainName:c.network.name,rpcUrls:[c.network.publicRpcUrl],blockExplorerUrls:[c.network.explorerUrl],nativeCurrency:c.network.nativeCurrency}]});}
+  const p=new BrowserProvider(injected as never);if((await p.getNetwork()).chainId!==5611n)throw Error("钱包网络不是 opBNB Testnet");
+  const signer=await p.getSigner(account),challenge=await api("wallet-login-intents",{address:account});
+  let signature:string;try{signature=await signer.signMessage(challenge.message);}catch{throw Error("钱包登录签名被拒绝或站点未获授权");}
   const session=await api("wallet-sessions",{challengeId:challenge.challengeId,signature});
-  provider=connected;address=selected;token=session.token;
-  el("wallet-status").textContent=selected;
-  show({wallet:selected,network:config.network.caip2});
+  provider=p;address=account;token=session.token;$("wallet-status").textContent=account;$("wallet-account").textContent=account;
+  injected.on?.("accountsChanged",()=>invalidate());injected.on?.("chainChanged",()=>invalidate());
+  $("login-screen").classList.add("hidden");$("app-screen").classList.remove("hidden");
+  await refresh();switchView("agents");
 }
-async function createIntent(){
-  if(!provider||!token)throw Error("请先连接钱包");
-  const config=await network();
-  const intent=await api("management-intents",{agentDid:value("agent-did"),scopes:value("scopes").split(",").map(x=>x.trim()).filter(Boolean),termSeconds:Number(value("term-days"))*86400,discoverable:(el("discoverable") as HTMLInputElement).checked},true);
-  if(intent.domain.chainId!==5611||getAddress(intent.domain.verifyingContract)!==getAddress(config.contracts.managementRegistry.address)||TypedDataEncoder.hash(intent.domain,intent.types,intent.message)!==intent.digest)throw Error("意图签名域或 digest 不匹配");
-  const signer=await provider.getSigner();
-  if(await signer.getAddress()!==address)throw Error("钱包账户已切换，请重新登录");
-  if((await provider.getNetwork()).chainId!==5611n)throw Error("钱包网络已切换，请重新登录");
-  const signature=await signer.signTypedData(intent.domain,intent.types,intent.message);
-  await api(`management-intents/${encodeURIComponent(intent.intentId)}/signatures`,{role:"manager",address,signature},true);
-  (el("intent-id") as HTMLInputElement).value=intent.intentId;
-  show({intentId:intent.intentId,agentDid:value("agent-did"),digest:intent.digest,status:"等待 Agent 在测试链 Skill 中批准同一意图"});
+function switchView(view:string){currentView=view;document.querySelectorAll<HTMLElement>(".view").forEach(x=>x.classList.toggle("hidden",x.id!==`view-${view}`));document.querySelectorAll<HTMLElement>("[data-view]").forEach(x=>x.classList.toggle("active",x.dataset.view===view));if(view==="audit")void loadAudit();if(view==="chain")void loadChain();}
+function chip(label:string,kind=""){return `<span class="chip ${kind}">${esc(label)}</span>`;}
+function table(head:string[],rows:string[]){return `<div class="table-wrap"><table><thead><tr>${head.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("")||`<tr><td colspan="${head.length}">暂无记录</td></tr>`}</tbody></table></div>`;}
+async function refresh(){if(!token)return;dashboard=await api("dashboard",undefined,true);renderAgents();renderAlerts();$("chain-status").textContent=`${dashboard.counts?.managed??0} 个管理中 · opBNB 5611`;$("pairing-exchanges").innerHTML=dashboard.pairingExchanges?.length?`<article class="card"><h2>最近配对</h2>${table(["交换 ID","方式","状态","有效期"],dashboard.pairingExchanges.map((x:any)=>`<tr><td class="code">${esc(short(x.id))}</td><td>${esc(x.kind)}</td><td>${chip(x.state)}</td><td>${esc(x.expires_at)}</td></tr>`))}</article>`:"";if(detail)await openAgent(detail.identity.agentDid);}
+function renderAgents(){const agents=(dashboard?.agents||[]).filter((x:any)=>currentFilter==="all"||currentFilter==="managed"&&x.management?.live||currentFilter==="unmanaged"&&!x.management?.live||currentFilter==="pending"&&x.managementDraft&&!["CONFIRMED","REJECTED"].includes(x.managementDraft.state));$("agent-list").innerHTML=table(["Agent","DID","身份","管理","来源","操作"],agents.map((x:any)=>`<tr><td>${esc(x.profile?.name||"未命名 Agent")}</td><td class="code">${esc(short(x.identity.agentDid))}</td><td>${chip(x.identity.state,x.identity.state==="ACTIVE"?"good":"warn")}</td><td>${chip(x.management?.live?"管理中":"未管理",x.management?.live?"good":"warn")}</td><td>${esc(x.associationSource)}</td><td><button data-open-agent="${esc(x.identity.agentDid)}">查看详情</button></td></tr>`));}
+async function openAgent(did:string){detail=await api(`dashboard/agents/${encodeURIComponent(did)}`,undefined,true);$("agent-list").classList.add("hidden");$("agent-detail").classList.remove("hidden");$("detail-title").textContent=detail.profile?.name||"未命名 Agent";$("detail-did").textContent=did;renderDetail();}
+function renderDetail(){if(!detail)return;const d=detail;document.querySelectorAll<HTMLElement>("[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===currentTab));let html="";
+  if(currentTab==="overview")html=`<div class="grid two"><article class="card"><h2>身份状态</h2><p>${chip(d.identity.state,d.identity.state==="ACTIVE"?"good":"warn")}</p><p>DID：<span class="code">${esc(d.identity.agentDid)}</span></p><p>Revision：${esc(d.identity.identityRevision)}</p><p>Profile Hash：<span class="code">${esc(d.identity.profileHash)}</span></p></article><article class="card"><h2>管理关系</h2><p>${chip(d.management?.live?"管理中":"未管理",d.management?.live?"good":"warn")}</p><p>Manager：<span class="code">${esc(d.management?.manager)}</span></p><p>期限：${esc(d.management?.expiresAt)}</p><p>来源：${esc(d.associationSource)}</p></article></div>${d.managementDraft?`<article class="card"><h2>管理草稿</h2><p>${chip(d.managementDraft.state)}</p><p>权限：${esc((d.managementDraft.scopes||[]).join(", "))}</p>${d.managementDraft.state==="AWAITING_WALLET_SIGNATURE"?`<button data-sign-draft="${esc(d.managementDraft.id)}">钱包签署草稿</button>`:d.managementDraft.state==="WAITING_AGENT"&&d.managementDraft.intent_expires_at&&new Date(d.managementDraft.intent_expires_at).getTime()<Date.now()?`<p>旧签名意图已过期，需要钱包重新签署。</p><button data-sign-draft="${esc(d.managementDraft.id)}">更新并签署草稿</button>`:""}</article>`:""}<article class="card"><h2>管理关系操作</h2><p>续期和转移需要 Agent 及相关 Manager 签署同一意图；结束关系由 Agent 或当前 Manager 签署。</p><label>新权限范围<input id="action-scopes" value="agent.read"></label><label>新期限（天）<input id="action-days" type="number" value="30"></label><label>新 Manager（仅转移）<input id="new-manager" placeholder="0x..."></label><button data-manage="RenewRelationship">续期</button><button data-manage="TransferRelationship">转移</button><button data-manage="EndRelationship" class="danger">结束关系</button><label>管理意图 ID<input id="action-intent-id"></label><button id="sign-action-intent">当前钱包签署意图</button><button id="submit-action-intent">所有签名齐全后提交</button></article>`;
+  if(currentTab==="overview"&&d.managementDraft?.state==="FROZEN_REORG")html+=`<article class="card"><h2>注册或管理交易遇到重组</h2><p>平台已冻结旧草稿。请核实链状态后重新创建签名意图。</p><button data-retry-draft="${esc(d.managementDraft.id)}">核实并重试草稿</button></article>`;
+  if(currentTab==="instances")html=`<article class="card"><h2>运行实例与凭证</h2><p>Instance Key 由 Agent 本地 Skill 创建；这里显示经过 Identity Key 签名的公开元数据。</p><pre>memo-agent-opbnb-testnet instance create worker-01 1\nmemo-agent-opbnb-testnet instance list\nmemo-agent-opbnb-testnet instance revoke &lt;instanceId&gt;</pre>${table(["实例","状态","到期","公钥"],(d.instances||[]).map((x:any)=>`<tr><td>${esc(x.name)}</td><td>${chip(x.state)}</td><td>${esc(x.expires_at)}</td><td class="code">${esc(short(x.public_key))}</td></tr>`))}</article>`;
+  if(currentTab==="lifecycle")html=`<article class="card"><h2>身份生命周期</h2><p>当前状态：${chip(d.identity.state)}</p><p>Identity Key 留在本地 Agent Skill；以下动作由 Agent 明确确认并签名。</p><pre>memo-agent-opbnb-testnet identity suspend\nmemo-agent-opbnb-testnet identity resume\nmemo-agent-opbnb-testnet identity revoke</pre><p>永久吊销不可恢复。Successor 当前未开放。</p></article>`;
+  if(currentTab==="profile")html=`<div class="grid two"><article class="card"><h2>Profile</h2><pre>${esc(JSON.stringify(d.profile,null,2))}</pre><p class="code">${esc(d.identity.profileHash)}</p></article><article class="card"><h2>DID 文档</h2><pre>${esc(JSON.stringify(d.document,null,2))}</pre><p class="code">${esc(d.identity.documentHash)}</p></article></div><article class="card"><h2>版本历史</h2>${table(["确认时间","Profile Hash","Document Hash"],(d.profileHistory||[]).map((x:any)=>`<tr><td>${esc(x.confirmedAt)}</td><td class="code">${esc(short(x.profileHash))}</td><td class="code">${esc(short(x.documentHash))}</td></tr>`))}<pre>memo-agent-opbnb-testnet identity update-profile profile.json\nmemo-agent-opbnb-testnet identity update-document document.json</pre></article>`;
+  if(currentTab==="logs")html=`<article class="card"><h2>链上操作</h2>${table(["动作","状态","交易","最终性"],(d.operations||[]).map((x:any)=>`<tr><td>${esc(x.action_type)}</td><td>${chip(x.state,x.state==="CONFIRMED"?"good":"warn")}</td><td class="code">${esc(short(x.tx_hash))}</td><td>${esc(x.finality_source)}</td></tr>`))}</article><article class="card"><h2>链事件</h2>${table(["区块","交易","事件"],(d.events||[]).map((x:any)=>`<tr><td>${esc(x.block_number)}</td><td class="code">${esc(short(x.tx_hash))}</td><td>${esc(x.event?.eventName||x.event?.name||"链事件")}</td></tr>`))}</article>`;
+  $("detail-content").innerHTML=html;
 }
-async function submit(){
-  if(!token)throw Error("请先连接钱包");
-  const op=await api("management-actions",{intentId:value("intent-id")},true,true);
-  show(op);
-  for(let n=0;n<60;n++){
-    const state=await api(`operations/${encodeURIComponent(op.operationId)}`,undefined,true);
-    show(state);
-    if(["CONFIRMED","FAILED","REORGED"].includes(state.state))break;
-    await new Promise(r=>setTimeout(r,3000));
-  }
-}
-async function relationship(){show(await api(`management/${encodeURIComponent(value("agent-did"))}`));}
-for(const [id,run] of [["connect-wallet",connect],["create-intent",createIntent],["submit-action",submit],["check-relationship",relationship]] as const){el(id).addEventListener("click",()=>{run().catch(e=>show(`操作失败：${e.message}`));});}
-api("integration/status").then(s=>{el("status-title").textContent=s.network?.name||"测试链";el("status-detail").textContent=s.chainConnected?"合约连接已验证":"等待部署清单或链连接";}).catch(()=>{el("status-detail").textContent="API 暂不可用";});
+function renderAlerts(){const alerts:string[]=[];for(const a of dashboard?.agents||[]){if(a.identity.state!=="ACTIVE")alerts.push(`${a.identity.agentDid} 身份状态：${a.identity.state}`);if(a.managementDraft&&!["CONFIRMED","REJECTED"].includes(a.managementDraft.state))alerts.push(`${a.identity.agentDid} 管理草稿待处理：${a.managementDraft.state}`);for(const x of a.instances||[])if(x.state==="ACTIVE"&&new Date(x.expires_at).getTime()<Date.now()+86400_000)alerts.push(`${a.identity.agentDid} 实例 ${x.name} 即将到期`);}$("alerts-list").innerHTML=alerts.length?alerts.map(x=>`<article class="card">${esc(x)}</article>`).join(""):'<article class="card">当前没有告警</article>';}
+async function loadAudit(){auditRows=await api("audit-events",undefined,true);$("audit-list").innerHTML=table(["序号","时间","事件","主体","详情"],auditRows.map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.created_at)}</td><td>${esc(x.event_type)}</td><td class="code">${esc(short(x.actor))}</td><td class="code">${esc(JSON.stringify(x.detail))}</td></tr>`));}
+async function loadChain(){const [c,b]=await Promise.all([config(),api("chain/blocks/latest")]);$("chain-content").innerHTML=`<div class="grid three"><article class="card"><h2>网络</h2><p>${esc(c.network.name)} · ${esc(c.network.caip2)}</p><p>最新区块：${esc(b.blockNumber)}</p><p class="code">${esc(b.blockHash)}</p></article><article class="card"><h2>DID Registry</h2><p class="code">${esc(c.contracts.didRegistry.address)}</p></article><article class="card"><h2>Management Registry</h2><p class="code">${esc(c.contracts.managementRegistry.address)}</p></article></div><article class="card"><h2>最终性与交易</h2><p>${esc(c.finality.mode||"finalized-tag")} · direct-relayer</p><p>操作按 CREATED → SIGNED → SUBMITTED → INCLUDED → CONFIRMED 跟踪。只有达到最终性才显示已确认。</p></article>`;}
+async function verifyAndSign(intent:any){const c=await config();const key="identityAccount" in intent.message?"didRegistry":"managementRegistry";if(intent.domain.chainId!==5611||getAddress(intent.domain.verifyingContract)!==getAddress(c.contracts[key].address)||TypedDataEncoder.hash(intent.domain,intent.types,intent.message)!==intent.digest)throw Error("INTENT_DOMAIN_OR_DIGEST_MISMATCH");if(!provider)throw Error("请先连接钱包");if((await provider.getNetwork()).chainId!==5611n)throw Error("钱包网络已变更");const signer=await provider.getSigner(address),role=intent.requiredSigners.find((x:any)=>getAddress(x.address)===address&&x.role!=="agent")?.role??intent.requiredSigners.find((x:any)=>getAddress(x.address)===address)?.role;if(!role)throw Error("当前钱包不是所需签署人");const signature=await signer.signTypedData(intent.domain,intent.types,intent.message);await api(`management-intents/${encodeURIComponent(intent.intentId)}/signatures`,{role,address,signature},true);return signature;}
+async function createDirect(){const intent=await api("management-intents",{agentDid:value("agent-did"),scopes:scopes(value("scopes")),termSeconds:Number(value("term-days"))*86400,discoverable:checked("discoverable")},true);await verifyAndSign(intent);($("intent-id") as HTMLInputElement).value=intent.intentId;toast(`管理意图 ${intent.intentId} 已由钱包签署；等待 Agent 审核`);}
+async function submitIntent(id:string){const result=await api("management-actions",{intentId:id},true,id);toast(`操作 ${result.operationId} 已接收，状态 ${result.state}`);await refresh();}
+async function createInvitation(){const c=await config(),bytes=crypto.getRandomValues(new Uint8Array(32)),handle=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join(""),hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(handle))),b=>b.toString(16).padStart(2,"0")).join("");const maxScopes=scopes(value("invite-scopes")),maxTermSeconds=Number(value("invite-days"))*86400,ttlSeconds=Number(value("invite-ttl"))*60,discoverable=checked("invite-discoverable");const x=await api("pairing-invitations",{handleHash:hash,maxScopes,maxTermSeconds,ttlSeconds,discoverable},true,crypto.randomUUID());const file={schema:"memo.agent-pairing-package/2",kind:"platform-invitation",exchangeId:x.exchangeId,handle,platformOrigin:location.origin,chainId:5611,didRegistry:c.contracts.didRegistry.address,managementRegistry:c.contracts.managementRegistry.address,maxScopes,maxTermSeconds,discoverable,expiresAt:x.expiresAt};download(`manager-${x.exchangeId}.memo-invitation.json`,JSON.stringify(file,null,2));toast("Invitation 已下载，请将文件安全交给 Agent");await refresh();}
+function download(name:string,content:string,type="application/json"){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+async function loadOffer(file:File){if(file.size>65536)throw Error("Offer 文件过大");const parsed=JSON.parse(await file.text()),c=await config();if(parsed.schema!=="memo.agent-pairing-package/2"||parsed.kind!=="agent-offer"||parsed.chainId!==5611||parsed.platformOrigin!==location.origin||getAddress(parsed.didRegistry)!==getAddress(c.contracts.didRegistry.address)||getAddress(parsed.managementRegistry)!==getAddress(c.contracts.managementRegistry.address)||Date.parse(parsed.expiresAt)<Date.now())throw Error("Offer 文件与平台配置不匹配");const x=await api("pairing-offers/inspect",{exchangeId:parsed.exchangeId,handle:parsed.handle},true);if(x.agentDid!==parsed.agentDid||JSON.stringify(x.maxScopes)!==JSON.stringify(parsed.maxScopes)||Number(x.maxTermSeconds)!==Number(parsed.maxTermSeconds)||Boolean(x.discoverable)!==Boolean(parsed.discoverable))throw Error("Offer 内容与平台记录不匹配");offer=parsed;$("offer-preview").textContent=`Agent: ${parsed.agentDid}\n权限上限: ${parsed.maxScopes.join(", ")}\n期限上限: ${Math.floor(parsed.maxTermSeconds/86400)} 天\n有效期: ${parsed.expiresAt}`;($("offer-scopes") as HTMLInputElement).value=parsed.maxScopes.join(",");($("offer-days") as HTMLInputElement).value=String(Math.floor(parsed.maxTermSeconds/86400));}
+async function redeemOffer(){if(!offer)throw Error("请先导入并校验 Offer 文件");const selected=scopes(value("offer-scopes")),days=Number(value("offer-days"));if(selected.some(s=>!offer.maxScopes.includes(s))||days*86400>offer.maxTermSeconds||checked("offer-discoverable")&&!offer.discoverable)throw Error("申请条款超过 Agent 上限");const x=await api(`pairing-offers/${encodeURIComponent(offer.exchangeId)}/redeem`,{handle:offer.handle,requestedScopes:selected,requestedTermSeconds:days*86400,discoverable:checked("offer-discoverable")},true,crypto.randomUUID());offer=undefined;($("offer-file") as HTMLInputElement).value="";$("offer-preview").textContent="Offer 已兑换";toast(`配对完成，草稿 ${x.draftId} 待钱包签署`);await refresh();}
+async function signDraft(id:string){const response=await api(`management-drafts/${encodeURIComponent(id)}/intent`,{},true),intent=response.intent;const signature=await verifyAndSign(intent);await api(`management-drafts/${encodeURIComponent(id)}/wallet-signature`,{intentId:intent.intentId,managerSignature:signature},true);toast("钱包已签署草稿，等待 Agent 在 Skill 中审批");await refresh();}
+async function createManagementAction(actionType:string){if(!detail)throw Error("请先选择 Agent");if(actionType==="EndRelationship"&&!await confirmAction("结束管理关系","该操作将在链上结束当前关系。"))return;const body:any={actionType,agentDid:detail.identity.agentDid};if(actionType!=="EndRelationship"){body.scopes=scopes(value("action-scopes"));body.termSeconds=Number(value("action-days"))*86400;body.discoverable=Boolean(detail.management?.discoverable);if(actionType==="TransferRelationship")body.newManager=value("new-manager");}const intent=await api("management-action-intents",body,true);await verifyAndSign(intent);($("action-intent-id") as HTMLInputElement).value=intent.intentId;toast(`意图 ${intent.intentId} 已签名，请其他签署人审核`);}
+async function confirmAction(title:string,content:string){const dialog=$("confirm-dialog") as HTMLDialogElement;$("confirm-title").textContent=title;$("confirm-text").textContent=content;dialog.showModal();return new Promise<boolean>(resolve=>dialog.addEventListener("close",()=>resolve(dialog.returnValue==="confirm"),{once:true}));}
+function exportAudit(kind:"json"|"csv"){const clean=auditRows.map(x=>({id:x.id,time:x.created_at,event:x.event_type,actor:x.actor,detail:x.detail}));if(kind==="json")download("memo-agent-audit.json",JSON.stringify(clean,null,2));else{const rows=[["id","time","event","actor","detail"],...clean.map(x=>[x.id,x.time,x.event,x.actor,JSON.stringify(x.detail)])];download("memo-agent-audit.csv",rows.map(r=>r.map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n"),"text/csv");}}
+
+document.addEventListener("click",e=>{const b=(e.target as HTMLElement).closest("button");if(!b)return;const run=async()=>{if(b.dataset.view)return switchView(b.dataset.view);if(b.dataset.filter){currentFilter=b.dataset.filter;document.querySelectorAll<HTMLElement>("[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===currentFilter));return renderAgents();}if(b.dataset.openAgent)return openAgent(b.dataset.openAgent);if(b.dataset.tab){currentTab=b.dataset.tab;return renderDetail();}if(b.dataset.signDraft)return signDraft(b.dataset.signDraft);if(b.dataset.manage)return createManagementAction(b.dataset.manage);switch(b.id){case"connect-wallet":return connect();case"logout":await api("wallet-session",undefined,true,undefined,"DELETE");return invalidate();case"refresh":return refresh();case"back-to-list":detail=undefined;$("agent-detail").classList.add("hidden");$("agent-list").classList.remove("hidden");return;case"create-invitation":return createInvitation();case"redeem-offer":return redeemOffer();case"create-intent":return createDirect();case"submit-action":return submitIntent(value("intent-id"));case"check-relationship":{const x=await api(`management/${encodeURIComponent(value("agent-did"))}`);toast(`关系状态：${x.live?"管理中":"未生效"}，Manager ${x.manager}`);return;}case"sign-action-intent":{const x=await api(`management-intents/${encodeURIComponent(value("action-intent-id"))}`,undefined,true);await verifyAndSign(x.intent);return toast("当前钱包已签署意图");}case"submit-action-intent":return submitIntent(value("action-intent-id"));case"export-json":return exportAudit("json");case"export-csv":return exportAudit("csv");}};void Promise.resolve().then(run).catch(error=>toast(`操作失败：${error.message}`));});
+$("offer-file").addEventListener("change",e=>{const file=(e.target as HTMLInputElement).files?.[0];if(file)void loadOffer(file).catch(error=>{offer=undefined;toast(`Offer 校验失败：${error.message}`);});});
+document.addEventListener("click",e=>{const id=(e.target as HTMLElement).closest<HTMLButtonElement>("[data-retry-draft]")?.dataset.retryDraft;if(id)void api(`management-drafts/${encodeURIComponent(id)}/retry`,{},true).then(()=>refresh()).then(()=>toast("链状态已核实，请重新签署草稿")).catch(error=>toast(`重试失败：${error.message}`));});
+void api("integration/status").then(x=>{$("chain-status").textContent=x.chainConnected?"opBNB 合约已连接":"链连接待检查";}).catch(()=>{$("chain-status").textContent="API 暂不可用";});

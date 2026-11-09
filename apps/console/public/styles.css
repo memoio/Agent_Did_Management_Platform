@@ -21,3 +21,51 @@ button:focus-visible, input:focus-visible { outline: 3px solid #75abff; outline-
 label { display: block; margin: 12px 0; font-size: 14px; }
 label input:not([type=checkbox]) { display: block; box-sizing: border-box; width: 100%; min-width: 0; margin-top: 5px; padding: 9px; border: 1px solid #9aa9bb; border-radius: 6px; }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflow: auto; }
+.hidden { display: none !important; }
+.login-screen { min-height: 100vh; background: linear-gradient(120deg,#102f53,#174e80 55%,#dbeaf4 55%); display: grid; place-items: center; padding: 2rem; }
+.login-layout { width: min(1100px,100%); display: grid; grid-template-columns: 1.2fr .8fr; gap: 3rem; align-items: center; }
+.hero { color: white; }
+.hero h1 { font-size: clamp(3rem,7vw,6rem); margin: .7rem 0; }
+.hero p { line-height: 1.7; }
+.journeys { margin-top: 3rem; padding: 1.3rem; border: 1px solid #7799b8; border-radius: 16px; }
+.login-card { background: white; border-radius: 18px; padding: 2rem; box-shadow: 0 24px 70px #061a3260; }
+.app-shell { min-height: 100vh; display: grid; grid-template-columns: 220px 1fr; }
+.sidebar { background: #102f53; color: white; padding: 1.5rem; display: flex; flex-direction: column; }
+.sidebar h2 { margin: 0; font-size: 1.5rem; }
+.sidebar p { opacity: .72; font-size: .8rem; }
+.sidebar nav { margin-top: 2rem; display: grid; gap: .45rem; }
+.sidebar nav button,.sidebar .secondary { background: transparent; text-align: left; border: 1px solid transparent; margin: 0; }
+.sidebar nav button.active,.sidebar nav button:hover { background: #ffffff20; }
+.sidebar #logout { margin-top: auto; }
+.workspace { min-width: 0; }
+.topbar { background: white; border-bottom: 1px solid #dbe3ec; min-height: 66px; padding: .8rem 2rem; display: flex; gap: 1rem; align-items: center; justify-content: flex-end; }
+.topbar span:first-child { margin-right: auto; overflow-wrap: anywhere; }
+main { padding: 2rem; max-width: 1380px; margin: auto; }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.heading h1,.view h1 { font-size: 2rem; margin: .4rem 0; }
+.grid { display: grid; gap: 1rem; }
+.grid.two { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.grid.three { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.card { background: white; border: 1px solid #dbe3ec; border-radius: 14px; padding: 1.3rem; margin: 1rem 0; min-width: 0; }
+.card h2 { margin-top: .2rem; }
+.muted,.card p { color: #586a7f; }
+.secondary { background: #e8eef5; color: #173753; }
+.danger { background: #a33131; }
+.filters,.tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1.2rem 0; }
+.filters button,.tabs button { background: white; color: #173753; border: 1px solid #d0d9e4; margin: 0; }
+.filters button.active,.tabs button.active { color: white; background: #2368d9; }
+.check { display: flex; gap: .5rem; align-items: center; }
+.check input { width: auto; }
+input,select { font: inherit; }
+table { border-collapse: collapse; width: 100%; background: white; }
+td,th { border-bottom: 1px solid #e2e9f0; padding: .8rem; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+th { color: #4b617b; font-size: .85rem; }
+.table-wrap { overflow-x: auto; border: 1px solid #dbe3ec; border-radius: 12px; }
+.chip { display: inline-block; border-radius: 999px; padding: .2rem .6rem; background: #e2edf9; color: #185184; }
+.chip.good { background: #d9f3e3; color: #186542; }.chip.warn { background: #fff1d1; color: #805400; }
+.code { font-family: ui-monospace,monospace; font-size: .85rem; overflow-wrap: anywhere; }
+#toast { position: fixed; bottom: 1rem; right: 1rem; max-width: min(440px,90vw); background: #173753; color: white; padding: 1rem; border-radius: 10px; display: none; z-index: 10; }
+#toast.show { display: block; }
+dialog { border: 0; border-radius: 14px; padding: 1.5rem; max-width: 420px; }
+dialog::backdrop { background: #102f5377; }
+@media (max-width: 900px) { .login-layout { grid-template-columns: 1fr; }.login-screen { background: #102f53; }.app-shell { grid-template-columns: 1fr; }.sidebar { position: static; }.sidebar nav { display: flex; overflow-x: auto; margin-top: 1rem; }.sidebar #logout { margin-top: 1rem; }.grid.two,.grid.three { grid-template-columns: 1fr; } }
