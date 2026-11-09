@@ -13,6 +13,15 @@ async function api(path:string,body?:unknown,auth=false,idem=false){
   return payload.data;
 }
 function show(data:unknown){result.textContent=typeof data==="string"?data:JSON.stringify(data,null,2);}
+function rpcCode(error:unknown):number|undefined{
+  let current:unknown=error;
+  for(let n=0;n<4&&current&&typeof current==="object";n++){
+    const detail=current as {code?:unknown;error?:unknown;info?:{error?:unknown};cause?:unknown};
+    if(typeof detail.code==="number")return detail.code;
+    current=detail.error??detail.info?.error??detail.cause;
+  }
+  return undefined;
+}
 async function network(){
   const config=await api("chain/config");
   if(config.network.chainId!==5611||config.network.caip2!=="eip155:5611"||!config.contracts.managementRegistry?.address)throw Error("NETWORK_OR_DEPLOYMENT_MISMATCH");
@@ -20,17 +29,34 @@ async function network(){
 }
 async function connect(){
   if(!window.ethereum)throw Error("请安装支持 EIP-712 的浏览器钱包");
+  provider=undefined;address="";token="";el("wallet-status").textContent="未连接";
   const config=await network();
+  let requested:unknown;
+  try{requested=await window.ethereum.request({method:"eth_requestAccounts"});}
+  catch(error){throw Error(rpcCode(error)===4001?"请在钱包中允许此站点连接账户":"钱包账户授权失败，请在钱包中允许 127.0.0.1:4273 访问该账户");}
+  if(!Array.isArray(requested)||typeof requested[0]!=="string")throw Error("钱包没有返回已授权账户");
+  const selected=getAddress(requested[0]);
   try{await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x15eb"}]});}
-  catch{await window.ethereum.request({method:"wallet_addEthereumChain",params:[{chainId:"0x15eb",chainName:config.network.name,rpcUrls:[config.network.publicRpcUrl],blockExplorerUrls:[config.network.explorerUrl],nativeCurrency:config.network.nativeCurrency}]});}
-  provider=new BrowserProvider(window.ethereum as never);
-  const signer=await provider.getSigner(); address=await signer.getAddress();
-  const challenge=await api("wallet-login-intents",{address});
-  const signature=await signer.signMessage(challenge.message);
+  catch(error){
+    if(rpcCode(error)!==4902)throw Error("切换 opBNB Testnet 失败，请在钱包中确认网络切换");
+    await window.ethereum.request({method:"wallet_addEthereumChain",params:[{chainId:"0x15eb",chainName:config.network.name,rpcUrls:[config.network.publicRpcUrl],blockExplorerUrls:[config.network.explorerUrl],nativeCurrency:config.network.nativeCurrency}]});
+  }
+  const connected=new BrowserProvider(window.ethereum as never);
+  if((await connected.getNetwork()).chainId!==5611n)throw Error("钱包当前网络不是 opBNB Testnet (5611)");
+  const accounts=await connected.send("eth_accounts",[]) as string[];
+  if(!accounts.some(account=>getAddress(account)===selected))throw Error("钱包尚未授权当前账户，请重新连接");
+  const signer=await connected.getSigner(selected);
+  const challenge=await api("wallet-login-intents",{address:selected});
+  let signature:string;
+  try{signature=await signer.signMessage(challenge.message);}
+  catch(error){
+    const code=rpcCode(error);
+    throw Error(code===4100?"钱包未授权登录签名。请在钱包扩展中允许 127.0.0.1:4273 使用当前账户，然后重新连接":code===4001?"已取消钱包登录签名":"钱包登录签名失败，请检查当前账户的站点权限");
+  }
   const session=await api("wallet-sessions",{challengeId:challenge.challengeId,signature});
-  token=session.token;
-  el("wallet-status").textContent=address;
-  show({wallet:address,network:config.network.caip2});
+  provider=connected;address=selected;token=session.token;
+  el("wallet-status").textContent=selected;
+  show({wallet:selected,network:config.network.caip2});
 }
 async function createIntent(){
   if(!provider||!token)throw Error("请先连接钱包");
@@ -39,6 +65,7 @@ async function createIntent(){
   if(intent.domain.chainId!==5611||getAddress(intent.domain.verifyingContract)!==getAddress(config.contracts.managementRegistry.address)||TypedDataEncoder.hash(intent.domain,intent.types,intent.message)!==intent.digest)throw Error("意图签名域或 digest 不匹配");
   const signer=await provider.getSigner();
   if(await signer.getAddress()!==address)throw Error("钱包账户已切换，请重新登录");
+  if((await provider.getNetwork()).chainId!==5611n)throw Error("钱包网络已切换，请重新登录");
   const signature=await signer.signTypedData(intent.domain,intent.types,intent.message);
   await api(`management-intents/${encodeURIComponent(intent.intentId)}/signatures`,{role:"manager",address,signature},true);
   (el("intent-id") as HTMLInputElement).value=intent.intentId;
