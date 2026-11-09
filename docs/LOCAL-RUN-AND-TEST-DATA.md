@@ -2,6 +2,8 @@
 
 更新于 2026-11-09。以下命令针对本机 macOS、opBNB Testnet（chain ID 5611）和已部署的 `opbnb-agentdid-20261109-a`。本机 API、Worker 和 PostgreSQL 在上次验收后已停止；部署清单、数据库、Agent 身份和链上数据均已保留。公开验收证据见 [ACCEPTANCE-2026-11-09.md](../deploy/testnet/ACCEPTANCE-2026-11-09.md)。
 
+第一次操作可先读[更简单的快速上手](QUICK-START-LOCAL-OPBNB.md)；本文保留完整测试与数据细节。
+
 > **先区分两种操作**：只读查询不需要独占 Gas 账户；启动 Worker 或创建新的链上操作前，须确认测试 Gas 账户 `0xd511f5C8A3e0A12f6119aCA7463d6f619CEf14B0` 暂时不被其他项目使用。本项目首版没有跨项目 nonce 分配器。不要重新执行合约部署命令来“启动项目”。
 
 ## 1. 路径与已有数据
@@ -135,28 +137,11 @@ export MEMO_AGENT_OPBNB_MANAGEMENT_REGISTRY=0x9e589B142543ea9E15eE25C53823354319
 node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" identity ensure > "$TEST_AGENT_HOME/identity-result.json"
 ```
 
-从 CLI 返回的**公开** DID 和公钥生成本轮 JSON 测试数据；不要把私钥写进文件：
+从 CLI 返回的**公开** DID 和公钥生成本轮 JSON 测试数据；脚本会校验公钥确实属于该 DID，且不会覆盖已有文件。不要把私钥写进文件：
 
 ```sh
-TEST_AGENT_HOME="$TEST_AGENT_HOME" node <<'NODE'
-const fs = require('node:fs');
-const path = require('node:path');
-const root = process.env.TEST_AGENT_HOME;
-const output = JSON.parse(fs.readFileSync(path.join(root, 'identity-result.json'), 'utf8'));
-if (!output.ok || !output.data?.did || !output.data?.publicKey) throw Error('IDENTITY_NOT_READY');
-const { did, publicKey } = output.data;
-const keyId = did + '#identity-key';
-const profile = { name: 'opBNB Integration Test Agent', description: 'Isolated Agent DID test' };
-const document = {
-  '@context': ['https://www.w3.org/ns/did/v1'],
-  id: did,
-  verificationMethod: [{ id: keyId, type: 'EcdsaSecp256k1VerificationKey2019', controller: did, publicKeyHex: publicKey }],
-  authentication: [keyId]
-};
-fs.writeFileSync(path.join(root, 'profile.json'), JSON.stringify(profile, null, 2) + '\n', { mode: 0o600 });
-fs.writeFileSync(path.join(root, 'document.json'), JSON.stringify(document, null, 2) + '\n', { mode: 0o600 });
-console.log(JSON.stringify({ did, profilePath: path.join(root, 'profile.json'), documentPath: path.join(root, 'document.json') }));
-NODE
+cd /Users/memo/Agent_DID/agent-did-memo-mainnet
+node scripts/make-test-agent-data.mjs "$TEST_AGENT_HOME/identity-result.json"
 ```
 
 确认 API 和 Worker 已启动后注册，等待 CLI 返回 `CONFIRMED`，记录 DID、action digest、operationId、交易与区块 hash：
