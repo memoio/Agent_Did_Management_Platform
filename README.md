@@ -1,5 +1,7 @@
 # Agent DID 管理平台（opBNB Testnet）
 
+Leader 在 Mac 本机运行时，先执行 `npm run local:configure` 生成本机配置，具体步骤见 [Mac 本机配置](docs/MAC-LOCAL-SETUP.md)。
+
 本分支提供 chain 5611 的 Agent DID 注册与用户管理关系：Agent 用独立测试链 Skill 创建身份和签署 EIP-712 意图，用户用 Console 浏览器钱包签署管理意图，API 将双签记录在 PostgreSQL，Worker 通过单 Relayer 提交交易并等待最终性。达到 `CONFIRMED` 后，DID 和管理关系可由只读 API 查询。Invitation/Offer 文件配对不在本轮范围。
 
 ## 当前状态
