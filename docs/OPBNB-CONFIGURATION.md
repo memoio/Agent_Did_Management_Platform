@@ -2,8 +2,6 @@
 
 更新于 2026-11-08。本轮交付聚焦平台的测试链配置和基础调用。配置入口为 `packages/chain-adapter/src/config.ts`，API 和命令行共用。Leader 后续对接平台业务。
 
-Memo 现有 Schema、opBNB UID 与 Agent 字段的逐项差异，见 [Schema 差异及调用配置表](MEMO-AGENT-SCHEMA-COMPARISON.md)。按同一 Schema UID 写入时，遵循其精确字段与编码定义。
-
 ## 已填入的网络信息
 
 | 参数 | 值 |
