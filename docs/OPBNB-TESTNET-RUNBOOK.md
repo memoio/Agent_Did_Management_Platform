@@ -16,6 +16,8 @@
 
 当前 Git 分支的 `.env.example` 仅包含公开地址和**空签名占位**，不代表 signer 已注入；EAS 地址不能代替 Agent 专用 Registry。不要在含私钥的终端会话中使用 `env`、`set -x` 或复制环境文件内容到报告。
 
+外部 signer 模块由 `MEMO_SIGNER_MODULE_PATH` 指向绝对路径，导出 `async createSigner({provider,keyId})` 并返回 ethers `Signer`；`keyId` 来自 `MEMO_RELAYER_SIGNER_KEY_ID`。程序核对该 Signer 地址必须等于 `MEMO_RELAYER_ADDRESS`。若使用环境私钥，应只在受控进程注入 `MEMO_RELAYER_PRIVATE_KEY`。这两种入口必须二选一，不能同时配置。
+
 ## 2. 构建、预检、部署
 
 从仓库根目录运行：
