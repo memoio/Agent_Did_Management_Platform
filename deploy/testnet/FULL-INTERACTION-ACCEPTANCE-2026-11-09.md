@@ -13,7 +13,7 @@
 | 身份恢复 | 第一个 DID | `4466e6ca-7456-4e21-9264-ceff94cd60d2` | `0x205dc98aeadeb1575edd652ffd383bf9da4b6f09a834017aaeb64c402bc995f7` | 221613280 | `0x3fbac4061781e8cd2919d66673d0701c2e3c4bf4acc963cffb9052e5c3988457` |
 | 实例凭证撤销 | 第一个 DID | `0a318c84-84f4-4ffe-8518-7bacbdda523c` | `0xca5332c7814783f3034b483673fefee2403f49621ee0d701e535fb2473227764` | 221614164 | `0x8657769ae55d610ed7c0adfe5c25e5745046e22cc95aacb2a77d5787fc1a64c4` |
 
-以上八个 operation 的最终数据库状态均为 `CONFIRMED`，`finalitySource=finalized-tag`。两条管理关系经双 RPC 读取均为 `live=true`，Manager 均为上文隔离钱包。两个 DID 均为 `ACTIVE`，解析结果 `verified=true`；第一个 DID 的 Profile 已更新为 `opBNB Test Agent updated`，身份 revision 为 5。实例 `inst_0e81fbe2-9e04-4d89-a6f5-d21e005a047f` 在确认后显示 `REVOKED`，再次控制证明返回 `INSTANCE_NOT_FOUND`。
+以上八个 operation 的最终数据库状态均为 `CONFIRMED`，`finalitySource=finalized-tag`。两条管理关系经双 RPC 读取均为 `live=true`，Manager 均为上文隔离钱包。两个 DID 均为 `ACTIVE`，解析结果 `verified=true`；第一个 DID 的 Profile 已更新为 `opBNB Test Agent updated`，身份 revision 为 5。实例 `inst_0e81fbe2-9e04-4d89-a6f5-d21e005a047f` 在确认后显示 `REVOKED`，再次控制证明返回 `INSTANCE_NOT_FOUND`。API 重启后隔离 Manager 的 Dashboard 仍显示 2 个管理中 Agent、审计中有 2 条 `PAIRING_COMPLETED`；原有历史 DID 也仍可解析。
 
 Offer 第一次管理签名意图在链读取暂时不可用期间过期，平台没有为其发交易。草稿刷新后双方对新 digest `0x62285afde31cca7e2f575d6011d1950f551b01667f07fe72e6c7fc6b28da8e27` 重新签名，才提交表中确认交易。这验证了过期签名不会被静默复用。Invitation 管理 digest 为 `0xd7c34e48ea67780ba66c6ab404133bed101634f70e98a0f6f48e765775f7c394`。
 

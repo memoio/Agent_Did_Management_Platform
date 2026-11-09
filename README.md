@@ -30,7 +30,7 @@ Leader 在 Mac 本机运行时，先执行 `npm run local:configure` 生成本�
 - `apps/api`：会话、意图、签名、查询 API 与 PostgreSQL 存储。
 - `apps/chain-worker`：提交、收据对账和事件索引。
 - `apps/console`：浏览器钱包登录、双向文件配对、多 Agent 管理和审计界面。
-- 相邻仓库 `memo-agent-did-mainnet-skill/skills/memo-agent-did-opbnb-testnet`：独立测试链 Skill。它使用独立状态目录和钥匙串命名空间，不迁移 chain 985 身份。
+- [独立测试链 Skill 分支](https://github.com/memoio/agent_did_skill/tree/feat/opbnb-testnet-skill/skills/memo-agent-did-opbnb-testnet)：本机验收 checkout 位于 `.data/opbnb-skill-publish-20261109/skills/memo-agent-did-opbnb-testnet`。它使用独立状态目录和钥匙串命名空间，不迁移 chain 985 身份。
 
 ## 离线验证
 
