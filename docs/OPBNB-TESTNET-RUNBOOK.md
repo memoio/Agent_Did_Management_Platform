@@ -58,6 +58,22 @@ npm start
 npm run worker
 ```
 
+在 macOS 的 Node.js 22 上，可以将受控配置放在 `$HOME/Library/Application Support/MemoAgentOpbnb/runtime.env`，目录权限 `700`、文件权限 `600`。从仓库根目录用同一个文件启动 API 与单个 Worker；文件中必须已经填入真实 manifest、SHA-256、数据库 URL 和**一种**签名入口：
+
+```sh
+MEMO_CHAIN_WRITES_ENABLED=true node --env-file="$HOME/Library/Application Support/MemoAgentOpbnb/runtime.env" dist/apps/api/src/main.js
+MEMO_CHAIN_WRITES_ENABLED=true node --env-file="$HOME/Library/Application Support/MemoAgentOpbnb/runtime.env" dist/apps/chain-worker/src/main.js
+```
+
+上述两条命令应在不同终端或受控服务进程中运行。若使用本机 PostgreSQL 测试库，可以把它的数据目录和仅属主可访问的 Unix socket 放在同一受控目录；本机实例的重启命令为：
+
+```sh
+MEMO_RUNTIME_DIR="$HOME/Library/Application Support/MemoAgentOpbnb"
+pg_ctl -D "$MEMO_RUNTIME_DIR/postgres" -o "-k '$MEMO_RUNTIME_DIR/run' -p 55435 -c listen_addresses=''" -l "$MEMO_RUNTIME_DIR/postgres.log" start
+```
+
+这个测试实例不监听 TCP；`DATABASE_URL` 指向端口 55435 的 Unix socket。不要把集成测试的 `TEST_DATABASE_URL` 指向该业务库，因为测试会清空平台表。缺少 signer 或 manifest 时不要启动 Worker；`/ready` 返回 503 是预期的拒绝写入状态。
+
 检查 `GET http://127.0.0.1:4273/api/v1/ready` 返回 `ok=true`、`writesEnabled=true`、`databaseReady=true`。`/health` 只表示进程存活。若对外提供服务，须在可信 HTTPS 反向代理后绑定 `0.0.0.0` 并设置 `MEMO_BEHIND_TRUSTED_PROXY=true`；Console 和 API 保持同源。
 
 ## 4. Agent 注册与用户管理
