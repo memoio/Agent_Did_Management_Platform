@@ -15,6 +15,8 @@
 
 以上八个 operation 的最终数据库状态均为 `CONFIRMED`，`finalitySource=finalized-tag`。两条管理关系经双 RPC 读取均为 `live=true`，Manager 均为上文隔离钱包。两个 DID 均为 `ACTIVE`，解析结果 `verified=true`；第一个 DID 的 Profile 已更新为 `opBNB Test Agent updated`，身份 revision 为 5。实例 `inst_0e81fbe2-9e04-4d89-a6f5-d21e005a047f` 在确认后显示 `REVOKED`，再次控制证明返回 `INSTANCE_NOT_FOUND`。API 重启后隔离 Manager 的 Dashboard 仍显示 2 个管理中 Agent、审计中有 2 条 `PAIRING_COMPLETED`；原有历史 DID 也仍可解析。
 
+Worker 停机期间测试链继续前进，原 100 区块索引窗口导致事件投影明显落后。本轮将每次扫描上限提高至 2000 区块；适配器仍按小块向双 RPC 读取日志，读取失败不推进游标。重启单 Worker 后，游标追过本次交易区块：第一个 DID 的 6 条事件和第二个 DID 的 2 条事件均入库。数据库联查确认 **8 个已确认 operation 的 txHash 与 blockHash 都匹配各自链事件，重复事件键为 0**。
+
 Offer 第一次管理签名意图在链读取暂时不可用期间过期，平台没有为其发交易。草稿刷新后双方对新 digest `0x62285afde31cca7e2f575d6011d1950f551b01667f07fe72e6c7fc6b28da8e27` 重新签名，才提交表中确认交易。这验证了过期签名不会被静默复用。Invitation 管理 digest 为 `0xd7c34e48ea67780ba66c6ab404133bed101634f70e98a0f6f48e765775f7c394`。
 
 离线验证使用独立 PostgreSQL，`npm run build` 和 `npm test` 均通过（8 个测试文件、26 个测试）。现有历史 DID 及管理关系只做兼容性查询，未被更新、吊销或转移。浏览器钱包在早期直接管理路径曾完成真实签名；本次两种配对旅程的 Manager 签名由隔离测试钱包脚本执行，Console 的新配对页面只做了界面检查，尚未做浏览器扩展端到端自动化。

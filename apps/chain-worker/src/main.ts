@@ -90,7 +90,9 @@ async function index(){
     rows=await db.query("SELECT block_number,block_hash FROM index_cursor WHERE deployment_id=$1",[id]);
   }
   let next:Awaited<ReturnType<typeof readNextWindow>>;
-  try{next=await readNextWindow(adapter,{blockNumber:Number(rows[0].block_number),blockHash:rows[0].block_hash as string},100);}
+  // A remote testnet can advance thousands of blocks while the Worker is offline.
+  // The adapter still splits this bounded window into small dual-RPC log requests.
+  try{next=await readNextWindow(adapter,{blockNumber:Number(rows[0].block_number),blockHash:rows[0].block_hash as string},2000);}
   catch(error){
     if((error as {code?:string}).code!=="CHAIN_STATE_UNCERTAIN")throw error;
     // A transient RPC failure leaves the cursor untouched. Rewind only after both RPCs
