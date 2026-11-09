@@ -3,24 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agent DID 管理平台 · 集成准备中</title>
+  <title>Agent DID · opBNB 测试链管理</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <main class="page">
     <div class="eyebrow">MEMO · AGENT DID MANAGEMENT PLATFORM</div>
-    <h1>区块链集成准备中</h1>
-    <p class="intro">当前仓库已移除旧的链上实现。平台保留 API 与页面外壳，供新的区块链开发工程师按需求接入远程测试链。</p>
+    <h1>Agent DID 管理</h1>
+    <p class="intro">连接 opBNB 测试链钱包，为 Agent 创建并签署管理关系。Agent 需在测试链 Skill 中签署同一意图。</p>
     <section class="status" aria-live="polite">
       <span class="dot"></span>
-      <div><strong id="status-title">正在读取平台状态</strong><p id="status-detail">此页面不会发起链上交易。</p></div>
+      <div><strong id="status-title">正在读取平台状态</strong><p id="status-detail">正在检查合约连接。</p></div>
     </section>
-    <section class="grid" aria-label="待实现能力">
-      <article><span>01</span><h2>Agent 身份</h2><p>创建身份、注册 DID、解析与生命周期。</p></article>
-      <article><span>02</span><h2>双向配对</h2><p>Invitation、Offer 与钱包管理授权。</p></article>
-      <article><span>03</span><h2>链上操作</h2><p>签名、提交、确认、审计与重组恢复。</p></article>
+    <section class="grid" aria-label="管理操作">
+      <article><span>01</span><h2>连接钱包</h2><p id="wallet-status">未连接</p><button id="connect-wallet">连接并登录</button></article>
+      <article><span>02</span><h2>创建管理意图</h2><label>Agent DID<input id="agent-did" placeholder="did:memo:agent:5611:0x..."></label><label>权限范围（逗号分隔）<input id="scopes" value="agent.read"></label><label>期限（天）<input id="term-days" type="number" min="1" max="365" value="30"></label><label><input id="discoverable" type="checkbox"> 公开可发现</label><button id="create-intent">创建并签名</button></article>
+      <article><span>03</span><h2>提交与查询</h2><label>意图 ID<input id="intent-id" placeholder="创建后自动填入"></label><button id="submit-action">Agent 签名后提交</button><button id="check-relationship">查询链上关系</button><pre id="result" aria-live="polite"></pre></article>
     </section>
-    <p class="note">上述功能均为待实现需求，不代表已经部署合约、连接测试链或提供可用的身份服务。详见仓库中的 <code>docs/BLOCKCHAIN_REQUIREMENTS.md</code>。</p>
+    <p class="note">只有 operation 显示 CONFIRMED 且链上查询 live=true，管理关系才生效。Invitation/Offer 文件配对不在本轮范围。</p>
   </main>
   <script type="module" src="/app.js"></script>
 </body>

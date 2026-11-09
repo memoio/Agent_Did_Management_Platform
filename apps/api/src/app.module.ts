@@ -2,6 +2,9 @@ import { Module } from "@nestjs/common";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { resolve } from "node:path";
 import { ApiController } from "./api.controller.js";
+import { ChainService } from "./chain.service.js";
+import { PlatformDb } from "./db.js";
+import { PlatformService } from "./platform.service.js";
 
 @Module({
   imports: [
@@ -11,5 +14,6 @@ import { ApiController } from "./api.controller.js";
     }),
   ],
   controllers: [ApiController],
+  providers: [ChainService, PlatformDb, PlatformService],
 })
 export class AppModule {}
