@@ -82,4 +82,6 @@ MEMO_CHAIN_WRITES_ENABLED=true node \
 
 访问 http://127.0.0.1:4273，检查 /api/v1/ready 返回写入和数据库就绪。注册和管理操作按 [联调手册](OPBNB-TESTNET-RUNBOOK.md) 验证，保存公开地址及交易回读证据。
 
+本机已有部署的日常启动、现有测试数据查询、创建新隔离 Agent 和专用测试数据库命令见[本机运行与测试数据手册](LOCAL-RUN-AND-TEST-DATA.md)。
+
 本配置工具已在目标 Mac 上运行；文件权限、PostgreSQL 启动、两份合约部署、Agent DID 注册、Manager 双签关系与重启后回读均已核验，见[2026-11-09 实链验收记录](../deploy/testnet/ACCEPTANCE-2026-11-09.md)。其他机器仍需独立配置本机运行环境，不能复制此机私钥文件或 Journal。

@@ -18,6 +18,7 @@ Leader 在 Mac 本机运行时，先执行 `npm run local:configure` 生成本�
 
 ## 文档与目录
 
+- [本机运行、完整测试与测试数据](docs/LOCAL-RUN-AND-TEST-DATA.md)：当前 Mac 的可复制命令、已有链上数据查询、新隔离 Agent 流程和专用测试数据库。
 - [测试链部署与验收手册](docs/OPBNB-TESTNET-RUNBOOK.md)：配置、部署、API/Worker、Console/Skill 操作与证据格式。
 - [链交互协议](packages/contracts/PROTOCOL.md)：合约动作、EIP-712 字段和事件。
 - [跨团队接口契约](docs/BLOCKCHAIN_INTEGRATION_CONTRACT.md)：输入输出及错误语义。
