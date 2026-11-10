@@ -49,9 +49,13 @@
 
 Invitation 和 Offer 含一次性凭据，按临时密码传递。平台只保存凭据 SHA-256；过期、取消、重复使用、scope 或期限越界会被拒绝。配对只建立平台关联和管理草稿，链上管理权以双方签名的 `ActivateRelationship` 交易达到最终性为准。对于已经直接上链管理的历史 Agent，Dashboard 标记 `confirmed-chain-management`，不补造配对记录。
 
+Offer 的“公开可发现”由 Agent 创建文件时设定为上限。若 Offer 中为 `false`，钱包不能把它改成 `true`；需 Agent 创建新的、允许公开的 Offer。Invitation 和直接管理入口则由钱包选择，再由 Agent 审核签署。该布尔值写入链上管理关系，当前 Console 没有公开搜索目录；即使未勾选，链上交易与关系仍可按地址查询。续期和转移时可重新选择此标记。
+
 ## 直接管理与后续操作
 
 原有的“输入 DID → 钱包创建并签署意图 → Agent `management inspect/approve` → Console 提交”入口仍在“登记 / 创建”页。对于续期或转移，在 Agent 详情的“管理关系操作”创建意图；Agent 用 `management pending`、`management inspect <intentId>`、`management approve <intentId>` 签署。转移还需要新 Manager 钱包登录并签署同一意图。结束关系由当前 Manager 在 Console 签署，或由 Agent 在本地执行 `management end`。所有签名齐全后提交，观察 operation 至 `CONFIRMED`。
+
+直接入口与 Offer 的链上结果相同，都是双签的 `ActivateRelationship`。差别发生在签名前：直接入口只需已注册 DID，没有一次性文件、Agent 预设上限或链下配对草稿；Offer 由 Agent 先发起，钱包需持有有效文件，并受 Agent 设定的 scope、期限和可发现性上限约束，兑换后产生配对关联与待签草稿。
 
 Agent 独自签署的身份动作：
 
