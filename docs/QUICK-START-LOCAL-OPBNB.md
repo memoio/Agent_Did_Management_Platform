@@ -117,7 +117,7 @@ node "$SKILL/bin/memo-agent-opbnb-testnet" register "$AGENT_HOME/profile.json" "
 
 “绑定钱包”在本系统中指**建立链上管理关系**，需要 Manager 钱包和 Agent 对**同一个意图**分别签名，不是把钱包私钥交给 Skill。
 
-1. 在有钱包扩展的浏览器中打开 <http://127.0.0.1:4273>。点“检测并连接钱包”：只检测到一个 MetaMask、OKX Wallet 或 Rabby 时会直接打开它；检测到多个时先选择。随后在钱包中允许站点连接、切换至 opBNB Testnet 5611 并签署登录消息。**看到**钱包地址和 `eip155:5611`。WalletConnect 扫码连接尚未接入。
+1. 在有钱包扩展的浏览器中打开 <http://127.0.0.1:4273>。点“检测并连接钱包”：只检测到一个 MetaMask、OKX Wallet 或 Rabby 时会直接打开它；检测到多个时先选择。随后在钱包中允许站点连接、切换至 opBNB Testnet 5611 并签署登录消息。**看到**钱包地址和 `eip155:5611`。
 2. 在页面第 02 栏填入**刚注册的新 DID**，权限填 `agent.read`，期限填 `30` 天，“公开可发现”保持不勾选。点“创建并签名”，在钱包中核对并签署管理意图。**看到** `intentId` 和 digest。
 3. 在 Agent 的第四个终端，把页面显示的真实 ID 代入下列命令（不要照抄尖括号）：
 

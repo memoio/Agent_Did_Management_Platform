@@ -51,7 +51,7 @@ async function discoverAndConnect(){
     walletOptions=findInjectedWallets(announcements,{ethereum:window.ethereum,okxwallet:window.okxwallet});
     if(walletOptions.length===1){$("provider-list").innerHTML="";await connectInjected(walletOptions[0]);return;}
     if(walletOptions.length>1){walletChoices();$("wallet-status").textContent=`检测到 ${walletOptions.length} 个钱包插件`;return;}
-    $("provider-list").innerHTML='<p class="muted">未检测到 MetaMask、OKX Wallet 或 Rabby。WalletConnect 扫码连接尚未接入。</p>';
+    $("provider-list").innerHTML='<p class="muted">未检测到 MetaMask、OKX Wallet 或 Rabby。请在当前浏览器中安装并启用其中一个钱包插件。</p>';
     $("wallet-status").textContent="未检测到支持的钱包插件";
   }finally{walletBusy=false;($("connect-wallet") as HTMLButtonElement).disabled=false;}
 }
