@@ -112,14 +112,15 @@ psql -h "$MEMO_RUNTIME_DIR/run" -p 55435 -d agent_did_opbnb \
 
 ## 4. 新建一组隔离测试数据并走完整流程
 
-每次新测都使用**新的 Agent ID**，避免再次注册既有 DID，或与既有有效管理关系冲突。以下命令只在本机创建新身份，不上链：
+每次新测都创建**新的 Agent 身份**，Skill 自动生成 ID，避免再次注册既有 DID，或与既有有效管理关系冲突。以下命令只在本机创建新身份，不上链：
 
 ```sh
 SKILL_DIR="$HOME/.agents/skills/memo-agent-did-opbnb-testnet"
-TEST_AGENT_ID="test-$(date +%Y%m%d-%H%M%S)"
-TEST_AGENT_HOME="$HOME/.memo-agent-opbnb-testnet/agents/$TEST_AGENT_ID"
 umask 077
-node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" agent init "$TEST_AGENT_ID"
+INIT_JSON="$(node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" agent init)"
+TEST_AGENT_ID="$(node -p 'JSON.parse(process.argv[1]).data.agentId' "$INIT_JSON")"
+TEST_AGENT_HOME="$(node -p 'JSON.parse(process.argv[1]).data.stateDirectory' "$INIT_JSON")"
+printf 'Agent ID: %s\n资料目录: %s\n' "$TEST_AGENT_ID" "$TEST_AGENT_HOME"
 ```
 
 Skill 已生成与新 DID、公钥一致的 `document.json` 和 `profile.template.json`。确认 `name`、填写非空 `description` 后保存为 `profile.json`；不要复制其他 Agent 的资料：

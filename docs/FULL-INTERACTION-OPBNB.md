@@ -18,14 +18,16 @@
 
 ### A. 平台 Invitation
 
-以下命令约定 `SKILL` 为已安装的 Skill 目录，`AGENT_ID` 为本 Agent 的唯一小写本地 ID，`AGENT_HOME="$HOME/.memo-agent-opbnb-testnet/agents/$AGENT_ID"`。这些变量须在运行命令的同一终端设置；已领取默认身份的原 Agent 使用 `agent list` 返回的目录。
+以下命令约定 `SKILL` 为已安装的 Skill 目录，`AGENT_ID` 和 `AGENT_HOME` 由 `agent init` 返回的 `agentId`、`stateDirectory` 赋值。已有 Agent 不重复初始化，使用 `agent list` 找回原 ID 和目录。这些变量须在运行命令的同一终端设置。
 
 1. 钱包在 Console 登录，进入“登记 / 创建”，填写 scope、最长期限和邀请有效期，下载 `.memo-invitation.json`。文件内的 `agentSetup` 列出测试链 Skill 的仓库、分支、安装命令、公开的 API 与合约配置，以及接收邀请至批准管理关系的顺序。它只提供指引，不会替 Agent 自动安装或运行命令；一次性 `handle` 仍需按临时密码保护。
-2. 新 Agent 先从已核验的 [Skill 仓库 main](https://github.com/memoio/agent_did_skill/tree/main)安装 `skills/memo-agent-did-opbnb-testnet`，在 Skill 目录运行 `npm ci --omit=dev`。为本 Agent 指定唯一 ID；同机部署可使用 Skill 内置的公开配置，其他部署须将文件中的平台 API 与两份合约地址完整配置并核对。不要把私钥写入邀请文件。
+2. 新 Agent 先从已核验的 [Skill 仓库 main](https://github.com/memoio/agent_did_skill/tree/main)安装 `skills/memo-agent-did-opbnb-testnet`，在 Skill 目录运行 `npm ci --omit=dev`。Skill 自动生成唯一 ID，无需用户命名；同机部署可使用 Skill 内置的公开配置，其他部署须将文件中的平台 API 与两份合约地址完整配置并核对。不要把私钥写入邀请文件。
 3. Agent 在本机测试链 Skill 中运行：
 
    ```sh
-   node "$SKILL/bin/memo-agent-opbnb-testnet" agent init "$AGENT_ID"
+   INIT_JSON="$(node "$SKILL/bin/memo-agent-opbnb-testnet" agent init)"
+   AGENT_ID="$(node -p 'JSON.parse(process.argv[1]).data.agentId' "$INIT_JSON")"
+   AGENT_HOME="$(node -p 'JSON.parse(process.argv[1]).data.stateDirectory' "$INIT_JSON")"
    node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" pair invitation accept invitation.json
    # 审核并填写 profile.template.json，保存为 profile.json
    node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" register --profile "$AGENT_HOME/profile.json"

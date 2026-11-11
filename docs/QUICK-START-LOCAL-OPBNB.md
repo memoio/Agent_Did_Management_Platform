@@ -87,20 +87,21 @@ curl -sS "http://127.0.0.1:4273/api/v1/management/$DID"
 
 ## 第四步：创建一个新的 Agent 并注册 DID
 
-要重跑注册流程，必须创建**新的隔离 Agent ID**。在第四个终端执行以下准备命令；它们只在本机创建身份和模板：
+要重跑注册流程，必须创建**新的隔离 Agent 身份**。在第四个终端执行以下准备命令；Skill 自动生成 ID，命令只在本机创建身份和模板：
 
 ```sh
 cd /Users/memo/Agent_DID/agent-did-memo-mainnet
 SKILL="$HOME/.agents/skills/memo-agent-did-opbnb-testnet"
-AGENT_ID="test-$(date +%Y%m%d-%H%M%S)"
-AGENT_HOME="$HOME/.memo-agent-opbnb-testnet/agents/$AGENT_ID"
 umask 077
-node "$SKILL/bin/memo-agent-opbnb-testnet" agent init "$AGENT_ID"
+INIT_JSON="$(node "$SKILL/bin/memo-agent-opbnb-testnet" agent init)"
+AGENT_ID="$(node -p 'JSON.parse(process.argv[1]).data.agentId' "$INIT_JSON")"
+AGENT_HOME="$(node -p 'JSON.parse(process.argv[1]).data.stateDirectory' "$INIT_JSON")"
+printf 'Agent ID: %s\n资料目录: %s\n' "$AGENT_ID" "$AGENT_HOME"
 cp "$AGENT_HOME/profile.template.json" "$AGENT_HOME/profile.json"
 open -e "$AGENT_HOME/profile.json"
 ```
 
-**看到什么**：`agent init` 返回新 DID 和资料路径。请在编辑器中填写并确认非空的 `name`、`description`，保存后才继续。身份私钥只在该 Agent 的钥匙串命名空间中；此时 DID **还没有注册上链**。
+**看到什么**：`agent init` 返回自动生成的 `agentId`、新 DID 和资料路径，后续命令自动使用变量 `AGENT_ID`。请在编辑器中填写并确认非空的 `name`、`description`，保存后才继续。身份私钥只在该 Agent 的钥匙串命名空间中；此时 DID **还没有注册上链**。
 
 继续注册：
 

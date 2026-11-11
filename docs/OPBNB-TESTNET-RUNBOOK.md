@@ -78,22 +78,23 @@ pg_ctl -D "$MEMO_RUNTIME_DIR/postgres" -o "-k '$MEMO_RUNTIME_DIR/run' -p 55435 -
 
 ## 4. Agent 注册与用户管理
 
-在独立 Skill 目录执行 `npm ci --omit=dev`。同机 Agent 可使用 Skill 内置的当前测试部署公开配置；其他部署须完整配置 API 与两份 Registry 地址，并与平台核对。一个安装可服务多个 Agent，但每个 Agent 使用唯一 ID、独立状态目录与钥匙串条目。
+在独立 Skill 目录执行 `npm ci --omit=dev`。同机 Agent 可使用 Skill 内置的当前测试部署公开配置；其他部署须完整配置 API 与两份 Registry 地址，并与平台核对。一个安装可服务多个 Agent；新 Agent 的唯一 ID 由 Skill 自动生成，Agent 保存返回的 `agentId`，之后自己代入命令，无需用户命名。
 
 ```sh
-node bin/memo-agent-opbnb-testnet agent init <agent-id>
+node bin/memo-agent-opbnb-testnet agent list
+node bin/memo-agent-opbnb-testnet agent init
 # 确认生成的 profile.template.json，填写名称和描述，保存为 profile.json
-node bin/memo-agent-opbnb-testnet --agent <agent-id> register --profile /absolute/path/profile.json
+node bin/memo-agent-opbnb-testnet --agent <返回的agentId> register --profile /absolute/path/profile.json
 ```
 
-`agent init` 只在本机生成 DID、`document.json` 和 Profile 模板；注册是单独操作。注册命令创建 Agent 会话、本地复算 EIP-712 digest、提交签名并轮询 operation。保存返回的 DID、digest、operationId、txHash、blockHash、finalitySource。只有 `CONFIRMED` 才表示链上注册完成。
+`agent init` 只在本机生成 ID、DID、`document.json` 和 Profile 模板；注册是单独操作。已有 Agent 使用 `agent list` 找到原 ID，不应再运行无参数的 `agent init`。注册命令创建 Agent 会话、本地复算 EIP-712 digest、提交签名并轮询 operation。保存返回的 DID、digest、operationId、txHash、blockHash、finalitySource。只有 `CONFIRMED` 才表示链上注册完成。
 
 Manager 在 `http://127.0.0.1:4273` 打开 Console，连接 chain 5611 钱包，填入 Agent DID、权限范围和期限，创建并签署管理意图。把意图 ID 发给 Agent。Agent 先查看完整字段，再按明确的管理授权请求签署：
 
 ```sh
-node bin/memo-agent-opbnb-testnet --agent <agent-id> management pending
-node bin/memo-agent-opbnb-testnet --agent <agent-id> management inspect <intentId>
-node bin/memo-agent-opbnb-testnet --agent <agent-id> management approve <intentId>
+node bin/memo-agent-opbnb-testnet --agent <本Agent的agentId> management pending
+node bin/memo-agent-opbnb-testnet --agent <本Agent的agentId> management inspect <intentId>
+node bin/memo-agent-opbnb-testnet --agent <本Agent的agentId> management approve <intentId>
 ```
 
 Manager 在 Console 点击“Agent 签名后提交”。API 仅在 Manager 与 Agent 的签名均有效时入队。Worker 使用稳定 `requestId` 提交；若结果未知，继续查询同一 operation。Console 的 `CONFIRMED` 和 `GET /api/v1/management/:did` 的 `live=true` 共同证明关系有效。
