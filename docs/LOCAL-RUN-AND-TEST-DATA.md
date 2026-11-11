@@ -96,18 +96,7 @@ curl -fsS "http://127.0.0.1:4273/api/v1/management/$DID"
 - 注册 operation：`f52693f0-0d58-4f3d-b1a7-4a3d2472fe23`；交易 `0xeb8082fbc8ecbd685e4e2477e632d4686651967fed258877e4b162da6befbadd`。
 - 管理 operation：`48d44604-62a8-4071-a230-7d52716d8f9d`；交易 `0x46dc8690890b0145e1dc11c752a25a08d6b40e5ddd8ad29753a6cfd2a404cf07`。
 
-operation API 需要身份会话，可用独立 Skill 查询：
-
-```sh
-SKILL_DIR=/Users/memo/Agent_DID/.data/opbnb-skill-publish-20261109/skills/memo-agent-did-opbnb-testnet
-export MEMO_AGENT_OPBNB_HOME=/Users/memo/Agent_DID/.data/opbnb-test-agent-20261109
-export MEMO_AGENT_OPBNB_API_URL=http://127.0.0.1:4273
-export MEMO_AGENT_OPBNB_DID_REGISTRY=0x456Df7c0C189BF0187a8c0A70c713F8Da609c9d7
-export MEMO_AGENT_OPBNB_MANAGEMENT_REGISTRY=0x9e589B142543ea9E15eE25C53823354319dB3929
-node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" identity status
-node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" operation f52693f0-0d58-4f3d-b1a7-4a3d2472fe23
-node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" operation 48d44604-62a8-4071-a230-7d52716d8f9d
-```
+operation API 需要对应 Agent 的身份会话。当前 Skill 必须先用 `agent list` 找到本地 ID，再通过 `--agent <ID> operation <operationId>` 查询；不要因为同机有一个 ACTIVE DID，就假定它属于这份历史测试记录。
 
 如只想核对本地持久记录，不必启动 API/Worker，可在 PostgreSQL 启动后执行**只读** SQL：
 
@@ -123,40 +112,35 @@ psql -h "$MEMO_RUNTIME_DIR/run" -p 55435 -d agent_did_opbnb \
 
 ## 4. 新建一组隔离测试数据并走完整流程
 
-每次新测都使用**新的状态目录和 Agent 身份**，避免再次注册既有 DID，或与既有有效管理关系冲突。以下命令在同一终端执行；`identity ensure` 仅在本机钥匙串创建身份，不上链：
+每次新测都使用**新的 Agent ID**，避免再次注册既有 DID，或与既有有效管理关系冲突。以下命令只在本机创建新身份，不上链：
 
 ```sh
-SKILL_DIR=/Users/memo/Agent_DID/.data/opbnb-skill-publish-20261109/skills/memo-agent-did-opbnb-testnet
-TEST_AGENT_HOME="/Users/memo/Agent_DID/.data/opbnb-agent-$(date +%Y%m%d-%H%M%S)"
+SKILL_DIR="$HOME/.agents/skills/memo-agent-did-opbnb-testnet"
+TEST_AGENT_ID="test-$(date +%Y%m%d-%H%M%S)"
+TEST_AGENT_HOME="$HOME/.memo-agent-opbnb-testnet/agents/$TEST_AGENT_ID"
 umask 077
-mkdir -p "$TEST_AGENT_HOME"
-export MEMO_AGENT_OPBNB_HOME="$TEST_AGENT_HOME"
-export MEMO_AGENT_OPBNB_API_URL=http://127.0.0.1:4273
-export MEMO_AGENT_OPBNB_DID_REGISTRY=0x456Df7c0C189BF0187a8c0A70c713F8Da609c9d7
-export MEMO_AGENT_OPBNB_MANAGEMENT_REGISTRY=0x9e589B142543ea9E15eE25C53823354319dB3929
-node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" identity ensure > "$TEST_AGENT_HOME/identity-result.json"
+node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" agent init "$TEST_AGENT_ID"
 ```
 
-从 CLI 返回的**公开** DID 和公钥生成本轮 JSON 测试数据；脚本会校验公钥确实属于该 DID，且不会覆盖已有文件。不要把私钥写进文件：
+Skill 已生成与新 DID、公钥一致的 `document.json` 和 `profile.template.json`。确认 `name`、填写非空 `description` 后保存为 `profile.json`；不要复制其他 Agent 的资料：
 
 ```sh
-cd /Users/memo/Agent_DID/agent-did-memo-mainnet
-node scripts/make-test-agent-data.mjs "$TEST_AGENT_HOME/identity-result.json"
+cp "$TEST_AGENT_HOME/profile.template.json" "$TEST_AGENT_HOME/profile.json"
+open -e "$TEST_AGENT_HOME/profile.json"
 ```
 
 确认 API 和 Worker 已启动后注册，等待 CLI 返回 `CONFIRMED`，记录 DID、action digest、operationId、交易与区块 hash：
 
 ```sh
-node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" register \
-  "$TEST_AGENT_HOME/profile.json" "$TEST_AGENT_HOME/document.json"
+node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" --agent "$TEST_AGENT_ID" register --profile "$TEST_AGENT_HOME/profile.json"
 ```
 
 Manager 在 Console 钱包中连接 chain 5611，填入**新 DID**、权限 `agent.read`、期限 `30` 天、`discoverable=false`，点击“创建并签名”。复制页面返回的 `intentId`，再由 Agent 校验并签署同一意图：
 
 ```sh
-node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" management pending
-node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" management inspect <intentId>
-node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" management approve <intentId>
+node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" --agent "$TEST_AGENT_ID" management pending
+node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" --agent "$TEST_AGENT_ID" management inspect <intentId>
+node "$SKILL_DIR/bin/memo-agent-opbnb-testnet" --agent "$TEST_AGENT_ID" management approve <intentId>
 ```
 
 核对 inspect 输出的 Manager 地址、明文 scope、scopesHash、期限、digest 后再 approve。Manager 在 Console 第 03 栏用**同一个 intentId**点击“Agent 签名后提交”。意图默认在创建后约 300 秒截止，建议两端准备就绪后再创建；不要反复点击“创建并签名”生成多个未使用意图。等待 operation 为 `CONFIRMED`，再查询 `/agent-dids/:did` 与 `/management/:did`，要求 DID 为 `ACTIVE`、关系 `live=true` 且 Manager 和 scope hash 一致。重启 API、Worker 后复查两个 operation 与关系，留存脱敏证据。

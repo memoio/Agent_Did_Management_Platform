@@ -87,31 +87,28 @@ curl -sS "http://127.0.0.1:4273/api/v1/management/$DID"
 
 ## 第四步：创建一个新的 Agent 并注册 DID
 
-要重跑注册流程，必须创建**新的隔离 Agent**。在第四个终端执行以下准备命令；它们只在本机创建身份和测试 JSON 文件：
+要重跑注册流程，必须创建**新的隔离 Agent ID**。在第四个终端执行以下准备命令；它们只在本机创建身份和模板：
 
 ```sh
 cd /Users/memo/Agent_DID/agent-did-memo-mainnet
-SKILL=/Users/memo/Agent_DID/.data/opbnb-skill-publish-20261109/skills/memo-agent-did-opbnb-testnet
-AGENT_HOME="/Users/memo/Agent_DID/.data/opbnb-agent-$(date +%Y%m%d-%H%M%S)"
+SKILL="$HOME/.agents/skills/memo-agent-did-opbnb-testnet"
+AGENT_ID="test-$(date +%Y%m%d-%H%M%S)"
+AGENT_HOME="$HOME/.memo-agent-opbnb-testnet/agents/$AGENT_ID"
 umask 077
-mkdir -p "$AGENT_HOME"
-export MEMO_AGENT_OPBNB_HOME="$AGENT_HOME"
-export MEMO_AGENT_OPBNB_API_URL=http://127.0.0.1:4273
-export MEMO_AGENT_OPBNB_DID_REGISTRY=0x456Df7c0C189BF0187a8c0A70c713F8Da609c9d7
-export MEMO_AGENT_OPBNB_MANAGEMENT_REGISTRY=0x9e589B142543ea9E15eE25C53823354319dB3929
-node "$SKILL/bin/memo-agent-opbnb-testnet" identity ensure > "$AGENT_HOME/identity-result.json"
-node scripts/make-test-agent-data.mjs "$AGENT_HOME/identity-result.json"
+node "$SKILL/bin/memo-agent-opbnb-testnet" agent init "$AGENT_ID"
+cp "$AGENT_HOME/profile.template.json" "$AGENT_HOME/profile.json"
+open -e "$AGENT_HOME/profile.json"
 ```
 
-**看到什么**：最后一条命令打印新 DID、`profile.json` 和 `document.json` 路径。身份私钥只在独立 macOS 钥匙串命名空间中；这些 JSON 文件只含公开测试数据。此时 DID **还没有注册上链**。
+**看到什么**：`agent init` 返回新 DID 和资料路径。请在编辑器中填写并确认非空的 `name`、`description`，保存后才继续。身份私钥只在该 Agent 的钥匙串命名空间中；此时 DID **还没有注册上链**。
 
 继续注册：
 
 ```sh
-node "$SKILL/bin/memo-agent-opbnb-testnet" register "$AGENT_HOME/profile.json" "$AGENT_HOME/document.json"
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" register --profile "$AGENT_HOME/profile.json"
 ```
 
-**看到什么**：CLI 返回 `ok:true`、新 DID、`operationId`、`txHash`；最终 `state:CONFIRMED`、`finalitySource:finalized-tag` 才表示注册成功。命令可能等待几分钟。若状态暂时是 `PENDING`，用 `node "$SKILL/bin/memo-agent-opbnb-testnet" operation <operationId>` 查询，**不要再次注册同一个 DID**。
+**看到什么**：CLI 返回 `ok:true`、新 DID、`operationId`、`txHash`；最终 `state:CONFIRMED`、`finalitySource:finalized-tag` 才表示注册成功。命令可能等待几分钟。若状态暂时是 `PENDING`，用 `node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" operation <operationId>` 查询，**不要再次注册同一个 DID**。
 
 ## 第五步：用钱包建立 Agent 管理关系
 
@@ -123,8 +120,8 @@ node "$SKILL/bin/memo-agent-opbnb-testnet" register "$AGENT_HOME/profile.json" "
 
 ```sh
 REQUEST_ID='把页面显示的 intentId 填在这里'
-node "$SKILL/bin/memo-agent-opbnb-testnet" binding inspect "$REQUEST_ID"
-node "$SKILL/bin/memo-agent-opbnb-testnet" binding approve "$REQUEST_ID"
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" binding inspect "$REQUEST_ID"
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" binding approve "$REQUEST_ID"
 ```
 
 **看到什么**：`inspect` 显示 Manager 地址、`agent.read`、期限和 digest；`approve` 返回 `operationId` 和 `SIGNED`。请先核对内容，再执行 approve。意图约 **300 秒**后到期，准备好双方再让钱包签名。

@@ -18,22 +18,27 @@
 
 ### A. 平台 Invitation
 
+以下命令约定 `SKILL` 为已安装的 Skill 目录，`AGENT_ID` 为本 Agent 的唯一小写本地 ID，`AGENT_HOME="$HOME/.memo-agent-opbnb-testnet/agents/$AGENT_ID"`。这些变量须在运行命令的同一终端设置；已领取默认身份的原 Agent 使用 `agent list` 返回的目录。
+
 1. 钱包在 Console 登录，进入“登记 / 创建”，填写 scope、最长期限和邀请有效期，下载 `.memo-invitation.json`。文件内的 `agentSetup` 列出测试链 Skill 的仓库、分支、安装命令、公开的 API 与合约配置，以及接收邀请至批准管理关系的顺序。它只提供指引，不会替 Agent 自动安装或运行命令；一次性 `handle` 仍需按临时密码保护。
-2. 新 Agent 先从已核验的 [Skill 仓库 main](https://github.com/memoio/agent_did_skill/tree/main)安装 `skills/memo-agent-did-opbnb-testnet`，在 Skill 目录运行 `npm ci --omit=dev`。独立核对部署清单后，把文件的 `platformOrigin`、`didRegistry`、`managementRegistry` 分别配置为 `MEMO_AGENT_OPBNB_API_URL`、`MEMO_AGENT_OPBNB_DID_REGISTRY`、`MEMO_AGENT_OPBNB_MANAGEMENT_REGISTRY`；不要把私钥写入邀请文件。使用 `pair invitation accept` 和 `binding pending / inspect / approve` 完成流程。
+2. 新 Agent 先从已核验的 [Skill 仓库 main](https://github.com/memoio/agent_did_skill/tree/main)安装 `skills/memo-agent-did-opbnb-testnet`，在 Skill 目录运行 `npm ci --omit=dev`。为本 Agent 指定唯一 ID；同机部署可使用 Skill 内置的公开配置，其他部署须将文件中的平台 API 与两份合约地址完整配置并核对。不要把私钥写入邀请文件。
 3. Agent 在本机测试链 Skill 中运行：
 
    ```sh
-   node "$SKILL/bin/memo-agent-opbnb-testnet" identity ensure
-   node "$SKILL/bin/memo-agent-opbnb-testnet" pair invitation accept invitation.json profile.json document.json
+   node "$SKILL/bin/memo-agent-opbnb-testnet" agent init "$AGENT_ID"
+   node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" pair invitation accept invitation.json
+   # 审核并填写 profile.template.json，保存为 profile.json
+   node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" register --profile "$AGENT_HOME/profile.json"
+   node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" pair invitation accept invitation.json
    ```
 
-   Skill 检查平台来源、chain ID、两份合约地址、有效期和平台的权威记录；尚未注册的 Agent 先注册并等待 `CONFIRMED`，之后完成链下配对。
+   Skill 检查平台来源、chain ID、两份合约地址、有效期和平台的权威记录；第一次接受只领取邀请，不自动注册。用户确认 Profile 后单独注册，达到 `CONFIRMED` 再完成链下配对。
 4. 钱包刷新“我的 Agent”，打开对应 Agent 的管理草稿，点击“钱包签署草稿”。Agent 再运行：
 
    ```sh
-   node "$SKILL/bin/memo-agent-opbnb-testnet" binding pending
-   node "$SKILL/bin/memo-agent-opbnb-testnet" binding inspect <请求ID>
-   node "$SKILL/bin/memo-agent-opbnb-testnet" binding approve <请求ID>
+   node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" binding pending
+   node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" binding inspect <请求ID>
+   node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" binding approve <请求ID>
    ```
 
    Agent 审核 Manager、scope、期限与 digest 后才批准。本机新版 Skill 也可以用统一的 `binding pending/inspect/approve` 命令处理同一个请求。API 接收双方签名，Worker 发送交易；Console 最终显示 `CONFIRMED`。
@@ -45,7 +50,7 @@
 1. Agent 已注册且身份为 `ACTIVE`，本机创建 Offer：
 
    ```sh
-   node "$SKILL/bin/memo-agent-opbnb-testnet" pair offer create ./agent.memo-offer.json agent.read,profile.update 30 900
+   node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" pair offer create "$AGENT_HOME/offers/agent.memo-offer.json" agent.read,profile.update 30 900
    ```
 
    最后两个参数分别是期限上限（天）与文件有效期（秒）。文件只在首次创建时写入，权限为 `0600`。
@@ -65,20 +70,20 @@ Invitation 和 Offer 含一次性凭据，按临时密码传递。平台只保�
 Agent 独自签署的身份动作：
 
 ```sh
-node "$SKILL/bin/memo-agent-opbnb-testnet" identity update-profile profile.json
-node "$SKILL/bin/memo-agent-opbnb-testnet" identity update-document document.json
-node "$SKILL/bin/memo-agent-opbnb-testnet" identity suspend
-node "$SKILL/bin/memo-agent-opbnb-testnet" identity resume
-node "$SKILL/bin/memo-agent-opbnb-testnet" identity revoke
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" identity update-profile profile.json
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" identity update-document document.json
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" identity suspend
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" identity resume
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" identity revoke
 ```
 
 Profile 与文档原文按版本存储；API 只返回链上确认且 hash 与当前合约状态一致的版本。永久吊销不能恢复。运行实例在 Agent 本机创建，Identity Key 签名公开凭证，Instance Key 留在本机钥匙串：
 
 ```sh
-node "$SKILL/bin/memo-agent-opbnb-testnet" instance create worker-01 1
-node "$SKILL/bin/memo-agent-opbnb-testnet" instance list
-node "$SKILL/bin/memo-agent-opbnb-testnet" identity self-test
-node "$SKILL/bin/memo-agent-opbnb-testnet" instance revoke <instanceId>
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" instance create worker-01 1
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" instance list
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" identity self-test
+node "$SKILL/bin/memo-agent-opbnb-testnet" --agent "$AGENT_ID" instance revoke <instanceId>
 ```
 
 `auth sign <challenge.json>` 使用本地 Instance Key 签一次性 Challenge，同一 issuer + nonce 再次使用会拒绝。实例撤销需等待链上 `RevokeInstanceCredential` 确认。
