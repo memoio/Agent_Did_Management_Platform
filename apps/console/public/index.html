@@ -1,27 +1,38 @@
 <!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agent DID 管理平台 · 集成准备中</title>
-  <link rel="stylesheet" href="/styles.css">
-</head>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agent DID · opBNB 测试链管理平台</title><link rel="stylesheet" href="/styles.css"></head>
 <body>
-  <main class="page">
-    <div class="eyebrow">MEMO · AGENT DID MANAGEMENT PLATFORM</div>
-    <h1>区块链集成准备中</h1>
-    <p class="intro">当前仓库已移除旧的链上实现。平台保留 API 与页面外壳，供新的区块链开发工程师按需求接入远程测试链。</p>
-    <section class="status" aria-live="polite">
-      <span class="dot"></span>
-      <div><strong id="status-title">正在读取平台状态</strong><p id="status-detail">此页面不会发起链上交易。</p></div>
-    </section>
-    <section class="grid" aria-label="待实现能力">
-      <article><span>01</span><h2>Agent 身份</h2><p>创建身份、注册 DID、解析与生命周期。</p></article>
-      <article><span>02</span><h2>双向配对</h2><p>Invitation、Offer 与钱包管理授权。</p></article>
-      <article><span>03</span><h2>链上操作</h2><p>签名、提交、确认、审计与重组恢复。</p></article>
-    </section>
-    <p class="note">上述功能均为待实现需求，不代表已经部署合约、连接测试链或提供可用的身份服务。详见仓库中的 <code>docs/BLOCKCHAIN_REQUIREMENTS.md</code>。</p>
-  </main>
-  <script type="module" src="/app.js"></script>
-</body>
-</html>
+<section id="login-screen" class="login-screen"><div class="login-layout"><article class="hero"><p class="eyebrow">MEMO LABS · opBNB TESTNET 5611</p><h1>Agent DID</h1><p>为 Agent 建立可验证身份，并由钱包与 Agent 双方签署管理关系。</p><div class="journeys"><h2>连接 Agent</h2><p>新 Agent：钱包下载 Invitation → Agent 接受并注册 → 双方签名</p><p>现有 Agent：导入 Agent Offer 或输入已知 DID → 双方签名</p></div></article><article class="login-card"><h2>连接钱包登录</h2><p>点击按钮检测 MetaMask、OKX Wallet 和 Rabby；检测到多个时选择一个，检测到一个时直接打开该钱包确认。</p><button id="connect-wallet">检测并连接钱包</button><div id="provider-list" aria-live="polite"></div><p id="wallet-status" role="status">未连接</p><p class="muted">登录和管理意图由钱包签名；Agent 身份密钥留在本地 Skill。</p></article></div></section>
+<div id="app-screen" class="app-shell hidden"><aside class="sidebar"><h2>Agent DID</h2><p>opBNB Testnet · 5611</p><nav><button data-view="agents">我的 Agent</button><button data-view="create">登记 / 创建</button><button data-view="alerts">安全告警</button><button data-view="audit">审计日志</button><button data-view="chain">区块链学习</button><button data-view="guide">创建指引</button></nav><button id="logout" class="secondary">退出钱包会话</button></aside><div class="workspace"><header class="topbar"><span id="wallet-account"></span><span id="chain-status"></span><button id="refresh" class="secondary">刷新</button></header><main>
+<section id="view-agents" class="view"><div class="heading"><div><p class="eyebrow">MY AGENTS</p><h1>我的 Agent</h1><p>身份状态与管理关系分别来自链上 Registry。</p></div><button data-view="create">登记 / 创建 Agent</button></div><div class="filters"><button data-filter="all">全部</button><button data-filter="pending">待处理</button><button data-filter="managed">管理中</button><button data-filter="unmanaged">未管理</button></div><div id="agent-list"></div><div id="agent-detail" class="hidden"><button id="back-to-list" class="secondary">← 返回列表</button><h2 id="detail-title"></h2><p id="detail-did"></p><div class="tabs"><button data-tab="overview">概览</button><button data-tab="instances">运行实例</button><button data-tab="lifecycle">生命周期</button><button data-tab="profile">Profile 与 DID 文档</button><button data-tab="logs">操作记录</button></div><div id="detail-content"></div></div></section>
+<section id="view-create" class="view hidden">
+  <div class="heading"><div><p class="eyebrow">REGISTER / CREATE</p><h1>登记 / 绑定 Agent</h1><p>先选符合当前情况的入口。创建新 Agent 和绑定现有 Agent 是并列的操作。</p></div><button data-view="guide" class="secondary">查看创建指引与流程图</button></div>
+  <div class="card binding-selector"><h2>你现在处于哪种情况？</h2><p>请选择一张卡片；下方只显示对应的操作步骤。三条路线最终都需要钱包与 Agent 双方签名。</p>
+    <fieldset class="binding-choice-set"><legend>选择一种创建或绑定方式</legend><div class="binding-sources">
+      <label class="binding-source"><input type="radio" name="binding-source" value="invitation" checked><span class="binding-source-icon" aria-hidden="true">＋</span><span class="binding-source-copy"><strong>新 Agent · 创建 Invitation</strong><small>Agent 还没有 DID，需要安装测试链 Skill、注册身份，再建立管理关系。</small><em>适合：现在要创建一个新 Agent</em></span><span class="binding-source-check" aria-hidden="true">✓</span></label>
+      <label class="binding-source"><input type="radio" name="binding-source" value="offer"><span class="binding-source-icon" aria-hidden="true">⇧</span><span class="binding-source-copy"><strong>现有 Agent · 导入 Offer</strong><small>Agent 已注册并主动提供 Offer 文件，文件写明可申请的权限和期限上限。</small><em>适合：手里已有 Agent Offer 文件</em></span><span class="binding-source-check" aria-hidden="true">✓</span></label>
+      <label class="binding-source"><input type="radio" name="binding-source" value="did"><span class="binding-source-icon" aria-hidden="true">#</span><span class="binding-source-copy"><strong>现有 Agent · 输入 DID</strong><small>Agent 已在链上注册，你知道它的 DID，但没有 Offer 文件。</small><em>适合：只有已注册的 Agent DID</em></span><span class="binding-source-check" aria-hidden="true">✓</span></label>
+    </div></fieldset>
+  </div>
+  <section class="card binding-workspace" id="binding-invitation-workspace" aria-labelledby="invitation-heading">
+    <div class="binding-header"><div><p class="eyebrow">NEW AGENT · INVITATION</p><h2 id="invitation-heading">为新 Agent 创建 Invitation</h2><p>先下载 Invitation 并安全交给 Agent。Agent 按文件中的指引安装 Skill、注册 DID；随后你们分别签署管理关系。</p></div></div>
+    <div class="binding-panel"><div class="binding-panel-heading"><h3>填写邀请上限</h3><p>Agent 完成注册和配对后，钱包可在此上限内签署管理条款。</p></div><div class="grid three invitation-fields"><label class="binding-field">权限范围 <span>多个权限用英文逗号分隔</span><input id="invite-scopes" value="agent.read"></label><label class="binding-field">最长期限 <span>1 至 365 天</span><div class="binding-number"><input id="invite-days" type="number" min="1" max="365" value="30"><span>天</span></div></label><label class="binding-field">邀请有效期 <span>1 至 1440 分钟</span><div class="binding-number"><input id="invite-ttl" type="number" min="1" max="1440" value="15"><span>分钟</span></div></label></div></div>
+    <p class="binding-field-note">若平台地址是 127.0.0.1，Invitation 只适合同一台机器上的 Agent；远程 Agent 需要可访问的 HTTPS 平台地址。</p>
+    <div class="binding-actions"><div><span class="binding-step">02</span><strong>下载并交给 Agent</strong><p>文件包含一次性凭据，请按临时密码安全传递。</p></div><button id="create-invitation">生成并下载 Invitation <span aria-hidden="true">→</span></button></div>
+    <div id="invitation-result" class="card invitation-result hidden" role="status"></div>
+  </section>
+  <section class="card binding-workspace hidden" id="binding-existing-workspace" aria-labelledby="existing-heading">
+    <div class="binding-header"><div><p class="eyebrow">EXISTING AGENT · BINDING</p><h2 id="existing-heading">绑定现有 Agent</h2><p>核对 Agent DID、权限与期限。钱包签名后，Agent 还需在本地 Skill 中审核并签名。</p></div></div>
+    <div class="binding-panel" id="binding-offer-source"><div class="binding-panel-heading"><h3>导入 Offer 文件</h3><p>文件只用于这次绑定，包含一次性凭据；请从 Agent 安全获取。</p></div><label class="offer-upload">选择 Agent 提供的 JSON 文件<input id="offer-file" type="file" accept=".json,application/json"><span>支持 .json，最大 64 KB。导入后会自动校验。</span></label><pre id="offer-preview" class="binding-preview" aria-live="polite">尚未选择文件</pre></div>
+    <div class="binding-panel hidden" id="binding-did-source"><div class="binding-panel-heading"><h3>填写 Agent DID</h3><p>请向 Agent 核实这个 DID 已在 opBNB Testnet 5611 注册。</p></div><label class="binding-field">Agent DID<input id="binding-did" placeholder="did:memo:agent:5611:0x..." autocomplete="off" spellcheck="false"></label><p class="binding-field-note">示例格式：did:memo:agent:5611:0x 加 40 位地址字符。</p></div>
+    <div class="binding-terms"><div class="binding-section-heading"><span class="binding-step">02</span><div><h3>设置管理条款</h3><p>Offer 路线只能在 Agent 给出的上限内选择；已知 DID 路线由 Agent 在签名前确认。</p></div></div><div class="grid two"><label class="binding-field">申请权限 <span>多个权限用英文逗号分隔</span><input id="binding-scopes" value="agent.read"></label><label class="binding-field">管理期限 <span>1 至 365 天</span><div class="binding-number"><input id="binding-days" type="number" min="1" max="365" value="30"><span>天</span></div></label></div></div>
+    <div class="binding-actions"><div><span class="binding-step">03</span><strong>核对并签名</strong><p id="binding-next-hint">请先导入并校验 Agent Offer。</p></div><button id="review-binding" disabled>核对绑定信息 <span aria-hidden="true">→</span></button></div>
+    <div id="binding-review" class="card binding-review hidden" role="region" aria-label="绑定信息确认"><h3>请核对以下条款</h3><p>钱包签名后，Agent 还会在本地 Skill 中逐项审核。</p><pre id="binding-review-text"></pre><button id="confirm-binding">确认并让钱包签名</button></div>
+    <div id="binding-result" class="card hidden" role="status"></div>
+  </section>
+  <section id="pairing-exchanges" aria-live="polite"></section>
+</section>
+<section id="view-alerts" class="view hidden"><h1>安全告警</h1><div id="alerts-list"></div></section>
+<section id="view-audit" class="view hidden"><div class="heading"><h1>审计日志</h1><div><button id="export-json" class="secondary">导出 JSON</button><button id="export-csv" class="secondary">导出 CSV</button></div></div><div id="audit-list"></div></section>
+<section id="view-chain" class="view hidden"><h1>区块链学习</h1><p>Agent 和钱包签署 EIP-712 业务意图，平台 Relayer 支付 Gas 并发送交易。页面显示交易进入区块和达到最终性的实际证据。</p><div id="chain-content"></div></section>
+<section id="view-guide" class="view hidden"><div id="creation-guide"></div></section>
+</main></div></div><dialog id="confirm-dialog"><form method="dialog"><h2 id="confirm-title">确认操作</h2><p id="confirm-text"></p><button value="cancel" class="secondary">取消</button><button value="confirm" class="danger">确认</button></form></dialog><div id="toast" role="status" aria-live="polite"></div><script type="module" src="/app.js"></script></body></html>

@@ -1,40 +1,57 @@
-# Agent DID 管理平台：区块链接入基线
+# Agent DID 管理平台（opBNB Testnet）
 
-本仓库当前是**待接入版本**。旧的 MEMO chain 985 合约、Bundler/Relayer、Worker、链上 API、嵌入式 Skill 和本地 Anvil 编排已从当前分支移除。平台只保留可构建的 HTTP API 与静态页面外壳，**没有连接任何区块链，也不能注册 DID 或发起链上操作**。
+Leader 在 Mac 本机运行时，先执行 `npm run local:configure` 生成本机配置，具体步骤见 [Mac 本机配置](docs/MAC-LOCAL-SETUP.md)。
 
-交接依据：
+本分支提供 chain 5611 的 Agent DID 注册、Invitation/Offer 双向配对、多 Agent Console、身份生命周期及用户管理关系。Agent 用独立测试链 Skill 保存密钥并签署 EIP-712 意图，用户用 Console 浏览器钱包签署管理意图，API 将双方签名和配对状态记录在 PostgreSQL，Worker 通过单 Relayer 提交交易并等待最终性。达到 `CONFIRMED` 后，DID 和管理关系可由只读 API 查询。
 
-- [区块链实现需求](docs/BLOCKCHAIN_REQUIREMENTS.md)：业务能力、API/适配器边界、状态机、安全要求与验收标准。
-- [输入、输出与对接契约](docs/BLOCKCHAIN_INTEGRATION_CONTRACT.md)：链工程师收到什么、必须交回什么、字段级接口、合入和联调门槛。
-- [测试链资料表](deploy/testnet/NETWORK_INPUTS.md)：由区块链工程师填写目标链、RPC、部署和运维信息。
-- [交付与接入验收单](deploy/testnet/DELIVERY_CHECKLIST.md)：逐项记录双方输入、链方输出、平台接入与 G0–G4 放行证据。
-- [机器可读规格](specs/chain-integration-v1/action-types.json)：动作字段表及部署清单、签名意图、规范化事件的 v1 JSON Schema 位于同一目录。
-- 旧实现保存在 Git 历史的初始提交 `37da76aa4a725cf9b53c70c0b965fa4ffb1d1fb7`，可供理解原流程；**不得把旧代码或 chain 985 参数直接当作新实现**。
+## 当前状态
 
-## 本地启动外壳
+| 环节 | 状态 |
+| --- | --- |
+| Solidity 合约、双 RPC 链适配器、部署与只读预检 | 已实现；离线编译和测试通过 |
+| API、PostgreSQL、Worker、Console、独立测试链 Skill | 完整交互代码已接入；离线测试通过；Offer、Invitation、Profile 更新、暂停/恢复和实例撤销已在真实测试链完成隔离验收 |
+| opBNB Testnet 双 RPC 网络预检 | 已通过，链 ID 和 genesis 匹配 |
+| Agent 专用 Registry 部署及真实 Agent/Manager 交易 | **已通过隔离测试验收**：两份合约已部署，Agent DID 注册与 Manager 双签关系均为 `CONFIRMED`；见[公开证据](deploy/testnet/ACCEPTANCE-2026-11-09.md) |
 
-依赖 Node.js `>=22.5.0`：
+`MEMO_EAS_ADDRESS` 和 Schema UID 是既有 Memo EAS 配置，不是本系统的 Agent 专用 Registry 部署地址。
+真实部署 manifest 与 signer 保存在受控本机运行目录，不提交到 Git；其他环境不能仅靠拉取分支就获得链写入能力。
+
+## 文档与目录
+
+- [本机快速上手](docs/QUICK-START-LOCAL-OPBNB.md)：每条关键命令、预期结果、系统地址及 Agent 注册和钱包绑定全流程。
+- [完整交互手册](docs/FULL-INTERACTION-OPBNB.md)：Invitation/Offer、Dashboard、生命周期、实例、告警与审计。
+- [完整交互测试链证据](deploy/testnet/FULL-INTERACTION-ACCEPTANCE-2026-11-09.md)：两个隔离 Agent 的交易、区块和最终性记录。
+- [本机运行、完整测试与测试数据](docs/LOCAL-RUN-AND-TEST-DATA.md)：当前 Mac 的可复制命令、已有链上数据查询、新隔离 Agent 流程和专用测试数据库。
+- [测试链部署与验收手册](docs/OPBNB-TESTNET-RUNBOOK.md)：配置、部署、API/Worker、Console/Skill 操作与证据格式。
+- [链交互协议](packages/contracts/PROTOCOL.md)：合约动作、EIP-712 字段和事件。
+- [当前链交互协议](packages/contracts/PROTOCOL.md)：链上动作、签名字段、事件与错误语义。
+- `packages/contracts`：Solidity 合约和编译产物。
+- `packages/chain-adapter`：双 RPC 校验、部署清单、提交 Journal、最终性与事件读取。
+- `apps/api`：会话、意图、签名、查询 API 与 PostgreSQL 存储。
+- `apps/chain-worker`：提交、收据对账和事件索引。
+- `apps/console`：浏览器钱包登录、双向文件配对、多 Agent 管理和审计界面。
+- [opBNB 测试链 Skill](https://github.com/memoio/agent_did_skill/tree/main/skills/memo-agent-did-opbnb-testnet)：使用独立状态目录和钥匙串命名空间，在 Agent 本机完成注册、Offer 与管理请求签名。
+
+## 离线验证
+
+要求 Node.js `>=22.5.0`：
 
 ```sh
 npm ci
-npm run check
-npm run dev
+npm run build
+npm test
 ```
 
-默认访问 `http://127.0.0.1:4273`。`GET /api/v1/health` 表示 API 进程可用且链功能待实现；`GET /api/v1/ready` 与 `GET /api/v1/chain/config` 返回 HTTP 503 和 `BLOCKCHAIN_NOT_IMPLEMENTED`。此前注册、解析、配对等 API 路由已撤下，不会误报成功。
+`npm test` 默认跳过 PostgreSQL 集成用例。完整测试需专用**测试数据库**；用例会清空其业务表：
 
-若在服务器上绑定 `0.0.0.0`，须置于可信反向代理后并设置 `MEMO_BEHIND_TRUSTED_PROXY=true`。这个外壳没有生产身份功能；完成需求文档中的安全、存储和远程测试链验收前，不应把它作为业务服务发布。
-
-## 当前目录
-
-```text
-apps/api/src                 HTTP 外壳与未接入状态
-apps/console/public          集成准备页面
-docs/BLOCKCHAIN_REQUIREMENTS.md   新实现需求与验收
-docs/BLOCKCHAIN_INTEGRATION_CONTRACT.md  跨团队输入/输出与对接契约
-specs/chain-integration-v1/    动作字段表及部署清单、意图、事件的 JSON Schema
-deploy/testnet/NETWORK_INPUTS.md  测试链资料模板
-deploy/testnet/DELIVERY_CHECKLIST.md  跨团队交付验收模板
+```sh
+TEST_DATABASE_URL='postgresql://user:password@127.0.0.1:5432/agent_did_test' npm test
 ```
 
-新的区块链实现应在明确网络、签名模型与接口契约之后，通过独立 PR 增加合约/链适配器、后端任务处理、客户端能力及测试。当前分支不包含任何可执行的链上写入命令。
+只读测试链预检无需私钥或部署清单：
+
+```sh
+npm run chain:preflight
+```
+
+完整运行需受控环境提供 `DATABASE_URL`、部署清单与 SHA-256、双 RPC、Relayer signer、持久 Journal 和预算上限，参见部署手册。未设置这些值时，`GET /api/v1/health` 只表示进程存活；`GET /api/v1/ready` 会拒绝服务。

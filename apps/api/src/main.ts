@@ -5,6 +5,7 @@ import { ApiExceptionFilter, EnvelopeInterceptor } from "./http.js";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { logger: ["error", "warn", "log"] });
+  app.enableShutdownHooks();
   app.useGlobalFilters(new ApiExceptionFilter());
   app.useGlobalInterceptors(new EnvelopeInterceptor());
   app.use((_request: unknown, response: { setHeader(name: string, value: string): void }, next: () => void) => {
