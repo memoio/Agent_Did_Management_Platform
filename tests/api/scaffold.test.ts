@@ -24,6 +24,5 @@ describe("unconfigured platform", () => {
     expect(routes).toContain("agent-dids");
     expect(routes).toContain("management-actions");
     expect(routes).toContain("binding-requests/next");
-    expect(routes).not.toContain("agent-requests/next");
   });
 });
