@@ -1,6 +1,6 @@
 # opBNB Testnet 部署、联调与验收
 
-更新于 2026-11-09。本手册只针对远程 opBNB Testnet（chain ID 5611），不使用本地模拟链，也不复用 MEMO chain 985 的 Agent 身份。
+更新于 2026-11-11。本手册只针对远程 opBNB Testnet（chain ID 5611）。
 
 ## 1. 输入和职责
 
@@ -12,7 +12,7 @@
 | PostgreSQL `DATABASE_URL` | 运维 | 持久化挑战、会话、意图、签名、operation、审计和索引游标 |
 | 独立持久目录 `MEMO_DEPLOYMENT_DIR`、`MEMO_SUBMISSION_DIRECTORY` | 运维 | 部署 checkpoint/manifest；提交 Journal 防重复广播 |
 | Agent 专用合约部署清单和 SHA-256 | `chain:deploy --execute` 输出 | API/Worker/Skill 绑定真实合约 |
-| Agent 的测试链身份、Manager 浏览器钱包 | 联调人员 | 双签交易；均与已有 chain 985 身份隔离 |
+| Agent 的测试链身份、Manager 浏览器钱包 | 联调人员 | 双签交易 |
 
 当前 Git 分支的 `.env.example` 仅包含公开地址和**空签名占位**，不代表 signer 已注入；EAS 地址不能代替 Agent 专用 Registry。不要在含私钥的终端会话中使用 `env`、`set -x` 或复制环境文件内容到报告。
 
@@ -45,7 +45,7 @@ npm run chain:deploy -- --execute
 
 ## 3. API 与 Worker
 
-另设 `DATABASE_URL`、`MEMO_PLATFORM_ORIGIN`、`MEMO_SUBMISSION_DIRECTORY`、`MEMO_MINIMUM_BALANCE_WEI`、`MEMO_GAS_PRICE_CAP_WEI`、`MEMO_GAS_LIMIT_CAP`、`MEMO_CHAIN_WRITES_ENABLED=true`、`MEMO_ALLOW_FINALITY_FALLBACK=false`，并复用上述 manifest、RPC 和 signer。Journal 目录必须在仓库外的持久卷，只运行**一个** Worker 和 Relayer 实例。Worker/Indexer 与 API 使用同一 PostgreSQL 数据库，数据库迁移在首次启动时自动创建表。
+另设 `DATABASE_URL`、`MEMO_PLATFORM_ORIGIN`、`MEMO_SUBMISSION_DIRECTORY`、`MEMO_MINIMUM_BALANCE_WEI`、`MEMO_GAS_PRICE_CAP_WEI`、`MEMO_GAS_LIMIT_CAP`、`MEMO_CHAIN_WRITES_ENABLED=true`、`MEMO_ALLOW_FINALITY_FALLBACK=false`，并复用上述 manifest、RPC 和 signer。Journal 目录必须在仓库外的持久卷，只运行**一个** Worker 和 Relayer 实例。Worker/Indexer 与 API 使用同一 PostgreSQL 数据库；首次启动按当前结构建表，内部测试时不运行旧数据库兼容迁移。
 
 ```sh
 npm run build
@@ -87,7 +87,7 @@ node bin/memo-agent-opbnb-testnet register /absolute/path/profile.json /absolute
 
 `profile.json` 和 `document.json` 为 JSON 对象。注册命令创建 Agent 会话、本地复算 EIP-712 digest、提交签名并轮询 operation。保存返回的 DID、digest、operationId、txHash、blockHash、finalitySource。只有 `CONFIRMED` 才表示链上注册完成。
 
-Manager 在 `http://127.0.0.1:4273` 打开 Console，连接 chain 5611 钱包，填入 Agent DID、权限范围、期限和公开可发现选项，创建并签署管理意图。把意图 ID 发给 Agent。Agent 先查看完整字段，再按明确的管理授权请求签署：
+Manager 在 `http://127.0.0.1:4273` 打开 Console，连接 chain 5611 钱包，填入 Agent DID、权限范围和期限，创建并签署管理意图。把意图 ID 发给 Agent。Agent 先查看完整字段，再按明确的管理授权请求签署：
 
 ```sh
 node bin/memo-agent-opbnb-testnet management pending

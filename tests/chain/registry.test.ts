@@ -221,7 +221,7 @@ describe("Agent DID v1 chain module (offline)", () => {
   it("verifies deployment anchors and rejects network/code/ABI mismatches", async () => {
     expect((await adapter.verifyDeployment()).verified).toBe(true);
     const wrong = structuredClone(manifest);
-    wrong.network.chainId = 985;
+    wrong.network.chainId = 1;
     expect(
       () => new OpbnbChainAdapter({ manifest: wrong, primary, secondary }),
     ).toThrow();
@@ -593,6 +593,21 @@ describe("Agent DID v1 chain module (offline)", () => {
     expect((await reopened.get(recovered.submissionId))?.txHash).toBe(
       recovered.txHash,
     );
+  });
+  it("does not spend gas on a signed intent with less than two minutes remaining", async () => {
+    const { wallet } = await register();
+    const intent = await adapter.buildIntent("UpdateProfile", {
+      identityAccount: wallet.address,
+      profileHash: hashJson({ tooLate: true }),
+    }, undefined, 60);
+    const signed = await signature(intent, "agent", wallet);
+    const nonce = await primary.getTransactionCount(relayer.address, "pending");
+    const entries = (await journal.entries()).length;
+    await expect(adapter.submitSignedAction(intent, [signed], uuid())).rejects.toMatchObject({
+      code: "ACTION_EXPIRED",
+    });
+    expect(await primary.getTransactionCount(relayer.address, "pending")).toBe(nonce);
+    expect((await journal.entries()).length).toBe(entries);
   });
   it("reserves a signed but unbroadcast nonce across restart and blocks a different request", async () => {
     const { wallet } = await register();

@@ -23,7 +23,7 @@
 
 本机 `runtime.env` 含受控签名配置，权限为 `600`。不要 `cat`、`source`、复制到仓库或把内容发到聊天。它由 API、Worker 和链工具通过 Node 的 `--env-file` 读取。Skill **不加载这个文件**；它只需要平台 URL、公开合约地址和自己的独立钥匙串身份。当前业务库名是 `agent_did_opbnb`，与配置工具在全新机器上的默认库名 `memo_agent_opbnb` 不同；工具保留了本机已有值。
 
-上表 Skill 路径是本机实际使用的独立 Git 工作树；新机器应从 [Skill 仓库的 `feat/opbnb-testnet-skill` 分支](https://github.com/memoio/agent_did_skill/tree/feat/opbnb-testnet-skill)安装，并在 Skill 目录执行 `npm ci --omit=dev`。不要复用 chain 985 Skill 的身份目录。
+上表 Skill 路径是本机实际使用的独立 Git 工作树；新机器应从 [Skill 仓库的 `main` 分支](https://github.com/memoio/agent_did_skill/tree/main)安装 opBNB Skill，并在 Skill 目录执行 `npm ci --omit=dev`。
 
 ## 2. 构建与启动
 

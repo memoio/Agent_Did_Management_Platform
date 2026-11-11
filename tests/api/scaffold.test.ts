@@ -5,7 +5,7 @@ import { ChainService } from "../../apps/api/src/chain.service.js";
 import type { PlatformService } from "../../apps/api/src/platform.service.js";
 
 describe("unconfigured platform", () => {
-  const api = new ApiController(new ChainService(), {} as PlatformService, {} as never, {} as never);
+  const api = new ApiController(new ChainService(), {} as PlatformService, {} as never, {} as never, {} as never);
 
   it("reports that chain writes are disabled", () => {
     expect(api.health()).toMatchObject({processAlive:true});
@@ -23,5 +23,7 @@ describe("unconfigured platform", () => {
       .filter((path): path is string => typeof path === "string");
     expect(routes).toContain("agent-dids");
     expect(routes).toContain("management-actions");
+    expect(routes).toContain("binding-requests/next");
+    expect(routes).not.toContain("agent-requests/next");
   });
 });

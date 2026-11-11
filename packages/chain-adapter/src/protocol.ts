@@ -95,7 +95,7 @@ export function hashIdentifier(value: string): string {
   return keccak256(toUtf8Bytes(value));
 }
 export function toDid(chainId: number, address: string): string {
-  requireChain(Number.isSafeInteger(chainId) && chainId > 0 && chainId !== 985);
+  requireChain(chainId === 5611);
   return `did:memo:agent:${chainId}:${getAddress(address).toLowerCase()}`;
 }
 export function actionDefinition(action: ActionType) {

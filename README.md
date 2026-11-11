@@ -24,13 +24,13 @@ Leader 在 Mac 本机运行时，先执行 `npm run local:configure` 生成本�
 - [本机运行、完整测试与测试数据](docs/LOCAL-RUN-AND-TEST-DATA.md)：当前 Mac 的可复制命令、已有链上数据查询、新隔离 Agent 流程和专用测试数据库。
 - [测试链部署与验收手册](docs/OPBNB-TESTNET-RUNBOOK.md)：配置、部署、API/Worker、Console/Skill 操作与证据格式。
 - [链交互协议](packages/contracts/PROTOCOL.md)：合约动作、EIP-712 字段和事件。
-- [跨团队接口契约](docs/BLOCKCHAIN_INTEGRATION_CONTRACT.md)：输入输出及错误语义。
+- [当前链交互协议](packages/contracts/PROTOCOL.md)：链上动作、签名字段、事件与错误语义。
 - `packages/contracts`：Solidity 合约和编译产物。
 - `packages/chain-adapter`：双 RPC 校验、部署清单、提交 Journal、最终性与事件读取。
 - `apps/api`：会话、意图、签名、查询 API 与 PostgreSQL 存储。
 - `apps/chain-worker`：提交、收据对账和事件索引。
 - `apps/console`：浏览器钱包登录、双向文件配对、多 Agent 管理和审计界面。
-- [独立测试链 Skill 分支](https://github.com/memoio/agent_did_skill/tree/feat/opbnb-testnet-skill/skills/memo-agent-did-opbnb-testnet)：本机验收 checkout 位于 `.data/opbnb-skill-publish-20261109/skills/memo-agent-did-opbnb-testnet`。它使用独立状态目录和钥匙串命名空间，不迁移 chain 985 身份。
+- [opBNB 测试链 Skill](https://github.com/memoio/agent_did_skill/tree/main/skills/memo-agent-did-opbnb-testnet)：使用独立状态目录和钥匙串命名空间，在 Agent 本机完成注册、Offer 与管理请求签名。
 
 ## 离线验证
 
@@ -42,7 +42,7 @@ npm run build
 npm test
 ```
 
-`npm test` 默认跳过 PostgreSQL 集成用例。完整测试需专用**测试数据库**；用例会清空其业务表，不能指向业务数据库：
+`npm test` 默认跳过 PostgreSQL 集成用例。完整测试需专用**测试数据库**；用例会清空其业务表：
 
 ```sh
 TEST_DATABASE_URL='postgresql://user:password@127.0.0.1:5432/agent_did_test' npm test

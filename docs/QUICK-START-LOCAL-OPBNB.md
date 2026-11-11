@@ -118,18 +118,18 @@ node "$SKILL/bin/memo-agent-opbnb-testnet" register "$AGENT_HOME/profile.json" "
 “绑定钱包”在本系统中指**建立链上管理关系**，需要 Manager 钱包和 Agent 对**同一个意图**分别签名，不是把钱包私钥交给 Skill。
 
 1. 在有钱包扩展的浏览器中打开 <http://127.0.0.1:4273>。点“检测并连接钱包”：只检测到一个 MetaMask、OKX Wallet 或 Rabby 时会直接打开它；检测到多个时先选择。随后在钱包中允许站点连接、切换至 opBNB Testnet 5611 并签署登录消息。**看到**钱包地址和 `eip155:5611`。
-2. 在页面第 02 栏填入**刚注册的新 DID**，权限填 `agent.read`，期限填 `30` 天，“公开可发现”保持不勾选。点“创建并签名”，在钱包中核对并签署管理意图。**看到** `intentId` 和 digest。
+2. 在“登记 / 创建”页的“绑定现有 Agent”选择“输入已知 Agent DID”，填入**刚注册的新 DID**，权限填 `agent.read`，期限填 `30` 天。点击“核对绑定信息”，确认 DID、Manager 地址、权限和期限后让钱包签名。**看到** `intentId`。
 3. 在 Agent 的第四个终端，把页面显示的真实 ID 代入下列命令（不要照抄尖括号）：
 
 ```sh
-INTENT_ID='把页面显示的 intentId 填在这里'
-node "$SKILL/bin/memo-agent-opbnb-testnet" management inspect "$INTENT_ID"
-node "$SKILL/bin/memo-agent-opbnb-testnet" management approve "$INTENT_ID"
+REQUEST_ID='把页面显示的 intentId 填在这里'
+node "$SKILL/bin/memo-agent-opbnb-testnet" binding inspect "$REQUEST_ID"
+node "$SKILL/bin/memo-agent-opbnb-testnet" binding approve "$REQUEST_ID"
 ```
 
-**看到什么**：`inspect` 显示 Manager 地址、`agent.read`、期限和 digest；`approve` 返回 `receivedRoles` 同时包含 `manager`、`agent`。请先核对内容，再执行 approve。意图约 **300 秒**后到期，准备好双方再点“创建并签名”。
+**看到什么**：`inspect` 显示 Manager 地址、`agent.read`、期限和 digest；`approve` 返回 `operationId` 和 `SIGNED`。请先核对内容，再执行 approve。意图约 **300 秒**后到期，准备好双方再让钱包签名。
 
-4. 回到 Console 第 03 栏，确认还是**同一个 intentId**，点“Agent 签名后提交”。**看到** operation 从 `SIGNED` → `SUBMITTED` → `CONFIRMED`；不要反复创建新意图。
+4. 回到 Console 点击“查询绑定进度”，查看 operation 从 `SIGNED` → `SUBMITTED` → `CONFIRMED`。达到 `CONFIRMED` 后，刷新“我的 Agent”即可查看管理关系。Skill 批准后自动提交；若操作失败或意图过期，重新创建意图并让钱包与 Agent 重新签名。
 5. 查询新 DID 的管理关系：
 
 ```sh

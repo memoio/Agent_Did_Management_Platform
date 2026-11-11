@@ -66,7 +66,7 @@ it("fills Mac paths and imports manifests while preserving existing signer and b
     expect(values.MEMO_CHAIN_WRITES_ENABLED).toBe("false");
     if (process.platform !== "win32")
       expect((await stat(result.environmentFile)).mode & 0o777).toBe(0o600);
-    manifest.network.chainId = 985;
+    manifest.network.chainId = 1;
     const other = path.join(result.deploymentDirectory, "wrong-chain.json");
     await writeFile(other, JSON.stringify(manifest));
     await expect(

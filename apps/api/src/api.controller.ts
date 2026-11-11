@@ -1,13 +1,14 @@
-import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Post, Query } from "@nestjs/common";
 import { ChainService } from "./chain.service.js";
 import { PlatformService } from "./platform.service.js";
 import { PlatformDb } from "./db.js";
 import { PairingService } from "./pairing.service.js";
+import { ChainMirrorService } from "./chain-mirror.service.js";
 import type { ActionType } from "../../../packages/chain-adapter/src/index.js";
 
 @Controller("api/v1")
 export class ApiController {
-  constructor(private readonly chain:ChainService,private readonly platform:PlatformService,private readonly db:PlatformDb,private readonly pairing:PairingService){}
+  constructor(private readonly chain:ChainService,private readonly platform:PlatformService,private readonly db:PlatformDb,private readonly pairing:PairingService,private readonly mirror:ChainMirrorService){}
 
   @Get("health") health(){return {service:"agent-did-management-platform",processAlive:true};}
   @Get("integration/status") integrationStatus(){return this.chain.status();}
@@ -29,6 +30,7 @@ export class ApiController {
   @Post("registry-actions") @HttpCode(202) registryAction(@Headers("authorization") auth:string,@Headers("idempotency-key") key:string,@Body() body:{intentId:string;signature:string}){return this.platform.submitRegistryAction(auth,body,key);}
   @Get("management-intents/pending") pendingManagement(@Headers("authorization") auth:string){return this.platform.pendingManagement(auth);}
   @Get("management-intents/:id") getManagementIntent(@Headers("authorization") auth:string,@Param("id") id:string){return this.platform.getManagementIntentDetails(auth,id);}
+  @Get("management-intents/:id/operation") managementIntentOperation(@Headers("authorization") auth:string,@Param("id") id:string){return this.platform.intentOperation(auth,id);}
   @Post("management-intents/:id/signatures") addManagementSignature(@Headers("authorization") auth:string,@Param("id") id:string,@Body() body:{role:string;address:string;signature:string}){return this.platform.addSignature(auth,id,body);}
   @Post("management-actions") @HttpCode(202) submitManagement(@Headers("authorization") auth:string,@Headers("idempotency-key") key:string,@Body() body:{intentId:string}){return this.platform.submitManagement(auth,body,key);}
   @Get("operations/:id") operation(@Headers("authorization") auth:string,@Param("id") id:string){return this.platform.operation(auth,id);}
@@ -40,6 +42,11 @@ export class ApiController {
   @Post("agent-instances") publishInstance(@Headers("authorization") auth:string,@Body() body:{schema:string;agentDid:string;instanceId:string;name:string;publicKey:string;expiresAt:number;identityRevision:number;signature:string}){return this.platform.publishInstance(auth,body);}
   @Get("agent-instances") instances(@Headers("authorization") auth:string){return this.platform.instances(auth);}
   @Get("chain/blocks/latest") async latestBlock(){return(await this.chain.adapter()).readBlock();}
+  @Get("chain-mirror/status") mirrorStatus(){return this.mirror.status();}
+  @Get("chain-mirror/agents") mirrorAgents(@Query() query:{did?:string;status?:string;manager?:string;limit?:string;after?:string}){return this.mirror.agents(query);}
+  @Get("chain-mirror/agents/:did") mirrorAgent(@Param("did") did:string){return this.mirror.agent(did);}
+  @Get("chain-mirror/agents/:did/verify") mirrorVerify(@Param("did") did:string){return this.mirror.verify(did);}
+  @Get("chain-mirror/events") mirrorEvents(@Query() query:{agentDid?:string;eventType?:string;txHash?:string;limit?:string;beforeBlock?:string;beforeLogIndex?:string}){return this.mirror.events(query);}
 
   @Post("pairing-invitations") invitation(@Headers("authorization") auth:string,@Headers("idempotency-key") key:string,@Body() body:{handleHash:string;maxScopes:string[];maxTermSeconds:number;ttlSeconds:number;discoverable?:boolean}){return this.pairing.invitation(auth,body,key);}
   @Post("pairing-invitations/inspect") inspectInvitation(@Headers("authorization") auth:string,@Body() body:{exchangeId:string;handle:string}){return this.pairing.inspectInvitation(auth,body);}
@@ -55,6 +62,7 @@ export class ApiController {
   @Post("management-drafts/:id/intent") draftIntent(@Headers("authorization") auth:string,@Param("id") id:string){return this.pairing.createDraftIntent(auth,id);}
   @Post("management-drafts/:id/wallet-signature") draftSignature(@Headers("authorization") auth:string,@Param("id") id:string,@Body() body:{intentId:string;managerSignature:string}){return this.pairing.signDraft(auth,id,body.intentId,body.managerSignature);}
   @Post("management-drafts/:id/retry") retryFrozenDraft(@Headers("authorization") auth:string,@Param("id") id:string){return this.pairing.retryFrozenDraft(auth,id);}
-  @Get("agent-requests/next") nextRequest(@Headers("authorization") auth:string){return this.pairing.nextRequest(auth);}
-  @Post("agent-requests/:id/decision") decideRequest(@Headers("authorization") auth:string,@Param("id") id:string,@Body() body:{decision:string;signature?:string;reason?:string}){return this.pairing.decide(auth,id,body);}
+  @Get("binding-requests/next") nextRequest(@Headers("authorization") auth:string){return this.pairing.nextRequest(auth);}
+  @Get("binding-requests/:id") bindingRequest(@Headers("authorization") auth:string,@Param("id") id:string){return this.pairing.request(auth,id);}
+  @Post("binding-requests/:id/decision") decideRequest(@Headers("authorization") auth:string,@Param("id") id:string,@Body() body:{decision:string;signature?:string;reason?:string}){return this.pairing.decide(auth,id,body);}
 }

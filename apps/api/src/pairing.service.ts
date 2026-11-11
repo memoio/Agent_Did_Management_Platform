@@ -27,7 +27,7 @@ export class PairingService {
     const actor=await this.platform.requireSession(auth,role);
     const maxScopes=scopes(input.maxScopes),maxTermSeconds=term(input.maxTermSeconds);
     if(!/^[0-9a-f]{64}$/.test(input.handleHash||"")||!Number.isSafeInteger(input.ttlSeconds)||input.ttlSeconds<60||input.ttlSeconds>86400)throw fail("INVALID_PAIRING_FILE");
-    if(input.discoverable!==undefined&&typeof input.discoverable!=="boolean")throw fail("INVALID_VISIBILITY");
+    if(input.discoverable!==undefined&&input.discoverable!==false)throw fail("INVALID_VISIBILITY");
     const agentDid=role==="agent"?toDid(5611,actor.address):null;
     if(agentDid){const adapter=await this.chain.adapter(),identity=await adapter.readIdentity(actor.address),relationship=await adapter.readRelationship(actor.address);if(identity.status!=="ACTIVE")throw conflict("IDENTITY_NOT_ACTIVE");if(relationship.live)throw conflict("ACTIVE_MANAGEMENT_RELATIONSHIP");}
     const id=randomUUID(),bodyHash=hash(JSON.stringify({kind,input:{...input,maxScopes}}));
@@ -53,12 +53,13 @@ export class PairingService {
   async inspectOffer(auth:string|undefined,input:{exchangeId:string;handle:string}){await this.platform.requireSession(auth,"manager");return view(await this.inspect(input.exchangeId,input.handle,"agent-offer"));}
 
   async claimInvitation(auth:string|undefined,id:string,handle:string){
-    const actor=await this.platform.requireSession(auth,"agent");await this.inspect(id,handle,"platform-invitation");
+    const actor=await this.platform.requireSession(auth,"agent");
+    if(typeof handle!=="string"||handle.length<32||handle.length>256)throw fail("INVALID_PAIRING_FILE");
     const did=toDid(5611,actor.address);
     return this.db.transaction(async c=>{
       const row=(await c.query("SELECT * FROM pairing_exchanges WHERE id=$1 FOR UPDATE",[id])).rows[0];
-      if(row?.state==="CLAIMED"&&row.handle_hash===hash(handle)&&row.agent_did===did)return view(row);
-      if(!row||row.handle_hash!==hash(handle)||row.state!=="OPEN"||new Date(row.expires_at).getTime()<Date.now())throw fail("PAIRING_INVALID_OR_EXPIRED");
+      if(row?.kind==="platform-invitation"&&row.state==="CLAIMED"&&row.handle_hash===hash(handle)&&row.agent_did===did&&new Date(row.completion_expires_at).getTime()>Date.now())return view(row);
+      if(!row||row.kind!=="platform-invitation"||row.handle_hash!==hash(handle)||row.state!=="OPEN"||new Date(row.expires_at).getTime()<Date.now())throw fail("PAIRING_INVALID_OR_EXPIRED");
       const updated=(await c.query("UPDATE pairing_exchanges SET state='CLAIMED',agent_did=$2,completion_expires_at=now()+interval '30 minutes',updated_at=now() WHERE id=$1 RETURNING *",[id,did])).rows[0];
       await c.query("INSERT INTO audit_events(event_type,actor,detail) VALUES('PAIRING_CLAIMED',$1,$2)",[actor.address,{exchangeId:id,agentDid:did}]);
       return view(updated);
@@ -77,7 +78,7 @@ export class PairingService {
       if(new Date(exchange.kind==="platform-invitation"?exchange.completion_expires_at:exchange.expires_at).getTime()<Date.now())throw fail("PAIRING_INVALID_OR_EXPIRED");
       if(requestedScopes.some(s=>!(exchange.max_scopes as string[]).includes(s)))throw fail("PAIRING_SCOPE_EXCEEDED");
       if(requestedTermSeconds>exchange.max_term_seconds)throw fail("PAIRING_TERM_EXCEEDED");
-      if(discoverable&&!exchange.discoverable)throw fail("PAIRING_VISIBILITY_EXCEEDED");
+      if(discoverable)throw fail("INVALID_VISIBILITY");
       const active=(await c.query("SELECT id FROM pairing_bindings WHERE agent_did=$1 AND state='ACTIVE' FOR UPDATE",[agentDid])).rows[0];
       if(active)throw conflict("PAIRING_CONFLICT");
       const bindingId=randomUUID(),draftId=randomUUID();
@@ -103,7 +104,7 @@ export class PairingService {
     const agent=getAddress(String(row.agent_did).split(":").at(-1)!),adapter=await this.chain.adapter(),identity=await adapter.readIdentity(agent),relationship=await adapter.readRelationship(agent);
     if(identity.status!=="ACTIVE")throw conflict("IDENTITY_NOT_ACTIVE");if(relationship.live)throw conflict("ACTIVE_MANAGEMENT_RELATIONSHIP");
     const selected=scopes(input.requestedScopes),termSeconds=term(input.requestedTermSeconds);
-    if(typeof input.discoverable!=="boolean")throw fail("INVALID_VISIBILITY");
+    if(input.discoverable!==false)throw fail("INVALID_VISIBILITY");
     return this.bind(id,row.agent_did as string,actor.address,selected,termSeconds,input.discoverable);
   }
   async exchange(auth:string|undefined,id:string){
@@ -156,6 +157,12 @@ export class PairingService {
     const actor=await this.platform.requireSession(auth,"agent"),did=toDid(5611,actor.address);
     const rows=await this.db.query("SELECT d.*,i.intent FROM management_drafts d JOIN intents i ON i.id=d.intent_id WHERE d.agent_did=$1 AND d.state='WAITING_AGENT' AND d.expires_at>now() AND i.expires_at>now() ORDER BY d.created_at LIMIT 1",[did]);
     return {request:rows[0]??null};
+  }
+  async request(auth:string|undefined,id:string){
+    const actor=await this.platform.requireSession(auth,"agent"),did=toDid(5611,actor.address);
+    const rows=await this.db.query("SELECT d.*,i.intent FROM management_drafts d JOIN intents i ON i.id=d.intent_id WHERE d.id=$1 AND d.agent_did=$2 AND d.state='WAITING_AGENT' AND d.expires_at>now() AND i.expires_at>now()",[id,did]);
+    if(!rows[0])throw new NotFoundException();
+    return {request:rows[0]};
   }
   async decide(auth:string|undefined,id:string,input:{decision:string;signature?:string;reason?:string}){
     const actor=await this.platform.requireSession(auth,"agent"),did=toDid(5611,actor.address);

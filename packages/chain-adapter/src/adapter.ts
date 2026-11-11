@@ -595,6 +595,13 @@ export class OpbnbChainAdapter {
     const submissionId = sha256(
       `${this.manifest.deploymentId}:${requestId}`,
     ).slice(2);
+    const requireSubmissionWindow = () =>
+      requireChain(
+        BigInt(intent.message.deadline as string) -
+          BigInt(Math.floor(Date.now() / 1000)) >=
+          120n,
+        "ACTION_EXPIRED",
+      );
     return journal.exclusive(async () => {
       // Recover an already signed transaction before revalidating its now-consumed nonce.
       const existing = await journal.get(submissionId);
@@ -621,6 +628,7 @@ export class OpbnbChainAdapter {
         );
         return this.broadcast(existing);
       }
+      requireSubmissionWindow();
       await this.readiness();
       // Single in-flight policy: reserve the relayer nonce across crashes/response loss.
       // An unresolved saved transaction must be reconciled using its original requestId.
@@ -701,6 +709,9 @@ export class OpbnbChainAdapter {
           decoded.gasLimit === gasLimit,
         "INVALID_SIGNATURE",
       );
+      // A fresh submission needs enough time to reach a block after signing.
+      // Check again after RPC, gas estimation, and the signer have run.
+      requireSubmissionWindow();
       const saved: Submission = {
         submissionId,
         requestId,

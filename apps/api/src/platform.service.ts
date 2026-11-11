@@ -93,10 +93,10 @@ export class PlatformService {
     return this.persistIntent(intent,toDid(5611,address),address,input.profile,input.document);
   }
 
-  async managementIntent(auth:string|undefined,input:{agentDid:string;scopes:string[];termSeconds:number;discoverable:boolean},ttlSeconds=300){
+  async managementIntent(auth:string|undefined,input:{agentDid:string;scopes:string[];termSeconds:number;discoverable:boolean},ttlSeconds=900){
     const session=await this.requireSession(auth,"manager");
     const agent=this.agentFromDid(input.agentDid);
-    if(!Number.isSafeInteger(input.termSeconds) || input.termSeconds<60 || input.termSeconds>365*24*3600 || typeof input.discoverable!=="boolean") throw bad("INVALID_TERMS");
+    if(!Number.isSafeInteger(input.termSeconds) || input.termSeconds<60 || input.termSeconds>365*24*3600 || input.discoverable!==false) throw bad("INVALID_TERMS");
     const adapter=await this.chain.adapter();
     const identity=await adapter.readIdentity(agent);
     if(identity.status!=="ACTIVE") throw conflict("AGENT_NOT_ACTIVE");
@@ -134,7 +134,7 @@ export class PlatformService {
     if(input.actionType==="RenewRelationship"||input.actionType==="TransferRelationship"){
       if(actor.role!=="manager"||actor.address!==manager)throw forbidden("MANAGER_REQUIRED");
       const identity=await adapter.readIdentity(agent);if(identity.status!=="ACTIVE")throw conflict("AGENT_NOT_ACTIVE");
-      if(!Number.isSafeInteger(input.termSeconds)||input.termSeconds!<60||input.termSeconds!>365*86400||typeof input.discoverable!=="boolean")throw bad("INVALID_TERMS");
+      if(!Number.isSafeInteger(input.termSeconds)||input.termSeconds!<60||input.termSeconds!>365*86400||input.discoverable!==false)throw bad("INVALID_TERMS");
       const block=await adapter.readBlock();
       const shared={agent,scopesHash:hashScopes(input.scopes!),expiresAt:String(block.timestamp+input.termSeconds!),discoverable:input.discoverable!};
       let payload:Message;
@@ -160,8 +160,12 @@ export class PlatformService {
   async pendingManagement(auth:string|undefined){
     const session=await this.requireSession(auth,"agent");
     const did=toDid(5611,session.address);
-    const rows=await this.db.query("SELECT i.intent,i.context FROM intents i JOIN operations o ON o.intent_id=i.id WHERE i.agent_did=$1 AND i.action_type IN ('ActivateRelationship','RenewRelationship','EndRelationship','TransferRelationship') AND i.expires_at>now() AND o.state='CREATED' ORDER BY i.created_at DESC LIMIT 30",[did]);
-    return rows.filter(r=>(r.intent as Intent).requiredSigners.some(s=>getAddress(s.address)===session.address)).map(r=>({intent:r.intent,display:r.context}));
+    const rows=await this.db.query("SELECT i.intent,i.context,d.id AS draft_id,d.state AS draft_state,EXISTS(SELECT 1 FROM intent_signatures s WHERE s.intent_id=i.id AND s.role='manager') AS manager_signed FROM intents i JOIN operations o ON o.intent_id=i.id LEFT JOIN management_drafts d ON d.intent_id=i.id WHERE i.agent_did=$1 AND i.action_type IN ('ActivateRelationship','RenewRelationship','EndRelationship','TransferRelationship') AND i.expires_at>now() AND o.state='CREATED' ORDER BY i.created_at DESC LIMIT 30",[did]);
+    return rows.filter(r=>{
+      const intent=r.intent as Intent;
+      if(!intent.requiredSigners.some(s=>getAddress(s.address)===session.address))return false;
+      return intent.actionType!=="ActivateRelationship"||(r.manager_signed&&(!r.draft_id||r.draft_state==="WAITING_AGENT"));
+    }).map(r=>({intent:r.intent,display:r.context,source:r.draft_id?"pairing":"known-did",requestId:r.draft_id??(r.intent as Intent).intentId,draftId:r.draft_id??null}));
   }
 
   async getIntent(auth:string|undefined,id:string){
@@ -248,15 +252,21 @@ export class PlatformService {
     return {operationId:r.id,state:r.state,actionDigest:r.action_digest,submissionId:r.submission_id,txHash:r.tx_hash,blockNumber:r.block_number,blockHash:r.block_hash,confirmations:r.confirmations,finalitySource:r.finality_source,errorCode:r.error_code,updatedAt:r.updated_at};
   }
 
+  async intentOperation(auth:string|undefined,id:string){
+    await this.getIntent(auth,id);
+    const row=(await this.db.query("SELECT id FROM operations WHERE intent_id=$1",[id]))[0];
+    if(!row)throw notFound("OPERATION_NOT_FOUND");
+    return this.operation(auth,row.id as string);
+  }
+
   async resolve(did:string){
     const address=this.agentFromDid(did), adapter=await this.chain.adapter();
     const identity=await adapter.readIdentity(address);
     if(identity.status==="NONE") throw notFound("DID_NOT_FOUND");
-    const docs=await this.db.query("SELECT * FROM agent_documents WHERE agent_did=$1",[did]);
     const proof=await this.db.query("SELECT tx_hash,block_number,block_hash,action_digest FROM operations WHERE agent_did=$1 AND action_type='RegisterAgent' AND state='CONFIRMED' ORDER BY updated_at DESC LIMIT 1",[did]);
     const versions=await this.db.query("SELECT profile,document,profile_hash,document_hash FROM agent_document_versions WHERE agent_did=$1 AND confirmed_at IS NOT NULL ORDER BY confirmed_at DESC",[did]);
-    const profile=versions.find(v=>v.profile_hash===identity.profileHash)?.profile??(docs[0]?.profile_hash===identity.profileHash?docs[0].profile:null);
-    const document=versions.find(v=>v.document_hash===identity.documentHash)?.document??(docs[0]?.document_hash===identity.documentHash?docs[0].document:null);
+    const profile=versions.find(v=>v.profile_hash===identity.profileHash)?.profile??null;
+    const document=versions.find(v=>v.document_hash===identity.documentHash)?.document??null;
     return {did,status:identity.status,revision:identity.revision,profileHash:identity.profileHash,documentHash:identity.documentHash,profile,document,verified:profile!==null&&document!==null,proof:proof[0]??null,source:identity.source};
   }
 
@@ -272,7 +282,7 @@ export class PlatformService {
     for(const row of rows){
       try{agents.push(await this.agentDetail(auth,row.agent_did as string));}catch{/* A stale binding must not expose another manager's data. */}
     }
-    const exchanges=await this.db.query("SELECT id,kind,state,agent_did,expires_at FROM pairing_exchanges WHERE creator=$1 OR manager_address=$1 ORDER BY created_at DESC LIMIT 30",[actor.address]);
+    const exchanges=await this.db.query("SELECT e.id,e.kind,e.state,e.agent_did,e.manager_address,e.expires_at,e.completion_expires_at,e.updated_at,e.requested_scopes,e.requested_term_seconds,b.id AS binding_id,d.id AS draft_id,d.state AS draft_state,o.id AS operation_id,o.state AS operation_state,o.tx_hash AS operation_tx_hash FROM pairing_exchanges e LEFT JOIN pairing_bindings b ON b.exchange_id=e.id LEFT JOIN management_drafts d ON d.binding_id=b.id LEFT JOIN operations o ON o.id=d.operation_id WHERE e.creator=$1 OR e.manager_address=$1 ORDER BY e.created_at DESC LIMIT 30",[actor.address]);
     return {schema:"memo.agent-dashboard/2",walletSession:{account:actor.address},agents,pairingExchanges:exchanges,counts:{total:agents.length,managed:agents.filter(a=>a.management?.live).length,pending:agents.filter(a=>a.managementDraft&&!["CONFIRMED","REJECTED"].includes(String(a.managementDraft.state))).length,unmanaged:agents.filter(a=>!a.management?.live).length}};
   }
 
@@ -285,9 +295,8 @@ export class PlatformService {
     if((management.live||!binding)&&getAddress(management.manager)!==actor.address)throw notFound("TENANT_AGENT_ACCESS_DENIED");
     const identity=await adapter.readIdentity(address);
     const versions=await this.db.query("SELECT profile,document,profile_hash,document_hash,confirmed_at FROM agent_document_versions WHERE agent_did=$1 AND confirmed_at IS NOT NULL ORDER BY confirmed_at DESC LIMIT 30",[did]);
-    const legacy=(await this.db.query("SELECT * FROM agent_documents WHERE agent_did=$1",[did]))[0];
-    const profile=versions.find(v=>v.profile_hash===identity.profileHash)?.profile??(legacy?.profile_hash===identity.profileHash?legacy.profile:null);
-    const document=versions.find(v=>v.document_hash===identity.documentHash)?.document??(legacy?.document_hash===identity.documentHash?legacy.document:null);
+    const profile=versions.find(v=>v.profile_hash===identity.profileHash)?.profile??null;
+    const document=versions.find(v=>v.document_hash===identity.documentHash)?.document??null;
     const draft=(await this.db.query("SELECT d.*,i.expires_at AS intent_expires_at FROM management_drafts d LEFT JOIN intents i ON i.id=d.intent_id WHERE d.agent_did=$1 AND d.manager_address=$2 ORDER BY d.created_at DESC LIMIT 1",[did,actor.address]))[0]??null;
     const operations=await this.db.query("SELECT id,action_type,state,action_digest,tx_hash,block_number,block_hash,finality_source,created_at FROM operations WHERE agent_did=$1 ORDER BY created_at DESC LIMIT 50",[did]);
     const events=await this.db.query("SELECT event,block_number,tx_hash FROM chain_events WHERE agent_did=$1 ORDER BY block_number DESC,log_index DESC LIMIT 100",[did]);

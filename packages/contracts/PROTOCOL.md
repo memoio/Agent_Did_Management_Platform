@@ -4,7 +4,7 @@
 
 ## 来源与部署边界
 
-字段、类型、顺序和签署人来自 [action-types.json](../../specs/chain-integration-v1/action-types.json) 和[集成契约](../../docs/BLOCKCHAIN_INTEGRATION_CONTRACT.md)。实现为 [AgentDIDRegistry.sol](src/AgentDIDRegistry.sol)、[AgentManagementRegistry.sol](src/AgentManagementRegistry.sol)。这不是原 AccountDid/EAS 合约，既有地址不能代填。
+字段、类型、顺序和签署人来自 [action-types.json](../../specs/chain-integration-v1/action-types.json)。实现为 [AgentDIDRegistry.sol](src/AgentDIDRegistry.sol)、[AgentManagementRegistry.sol](src/AgentManagementRegistry.sol)。部署时使用这两份合约的实际地址。
 
 编译锁定 Solidity 0.8.28、OpenZeppelin 5.1.0、optimizer 200、viaIR、EVM `paris`。`npm run chain:compile` 生成 `artifacts/`。ABI 文件使用 UTF-8、两空格缩进、末尾 LF，SHA-256 针对原始字节，仓库属性固定这些文件的 LF 换行。运行时代码 hash 取链上实际 bytecode 的 keccak256。EIP-712 缓存、immutable 地址会影响实际运行时代码。
 

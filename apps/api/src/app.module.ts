@@ -6,6 +6,7 @@ import { ChainService } from "./chain.service.js";
 import { PlatformDb } from "./db.js";
 import { PlatformService } from "./platform.service.js";
 import { PairingService } from "./pairing.service.js";
+import { ChainMirrorService } from "./chain-mirror.service.js";
 
 @Module({
   imports: [
@@ -15,6 +16,6 @@ import { PairingService } from "./pairing.service.js";
     }),
   ],
   controllers: [ApiController],
-  providers: [ChainService, PlatformDb, PlatformService, PairingService],
+  providers: [ChainService, PlatformDb, PlatformService, PairingService, ChainMirrorService],
 })
 export class AppModule {}

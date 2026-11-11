@@ -12,12 +12,15 @@
 
 在装有钱包扩展的浏览器中打开 Console，点击“检测并连接钱包”。页面通过 EIP-6963 和兼容入口查找 MetaMask、OKX Wallet、Rabby：只找到一个时直接请求连接；找到多个时列出钱包供用户选择。选中后，钱包会要求授权账户、必要时切换到 opBNB Testnet 5611，并签署登录消息。切换账户或网络后需要重新登录。
 
-## 钱包与 Agent 的两种配对
+## 钱包与 Agent 的统一绑定流程
+
+“登记 / 创建”先展示三张并列入口卡片：新 Agent 选 Invitation；已有 Offer 文件选导入 Offer；只知道已注册 DID 时选输入 DID。选中后只显示对应操作区。现有 Agent 的两条路线使用同一组条款与核对步骤，核对 Agent DID、Manager、权限和期限后由钱包签名。Agent 统一使用 `binding pending`、`binding inspect <请求ID>`、`binding approve <请求ID>` 审核。批准后平台进入 Worker 队列，钱包可用同一结果页的“查询绑定进度”查看 operation，链上达到最终性才算管理关系生效。
 
 ### A. 平台 Invitation
 
-1. 钱包在 Console 登录，进入“登记 / 创建”，填写 scope、最长期限和邀请有效期，下载 `.memo-invitation.json`。
-2. Agent 在本机测试链 Skill 中运行：
+1. 钱包在 Console 登录，进入“登记 / 创建”，填写 scope、最长期限和邀请有效期，下载 `.memo-invitation.json`。文件内的 `agentSetup` 列出测试链 Skill 的仓库、分支、安装命令、公开的 API 与合约配置，以及接收邀请至批准管理关系的顺序。它只提供指引，不会替 Agent 自动安装或运行命令；一次性 `handle` 仍需按临时密码保护。
+2. 新 Agent 先从已核验的 [Skill 仓库 main](https://github.com/memoio/agent_did_skill/tree/main)安装 `skills/memo-agent-did-opbnb-testnet`，在 Skill 目录运行 `npm ci --omit=dev`。独立核对部署清单后，把文件的 `platformOrigin`、`didRegistry`、`managementRegistry` 分别配置为 `MEMO_AGENT_OPBNB_API_URL`、`MEMO_AGENT_OPBNB_DID_REGISTRY`、`MEMO_AGENT_OPBNB_MANAGEMENT_REGISTRY`；不要把私钥写入邀请文件。使用 `pair invitation accept` 和 `binding pending / inspect / approve` 完成流程。
+3. Agent 在本机测试链 Skill 中运行：
 
    ```sh
    node "$SKILL/bin/memo-agent-opbnb-testnet" identity ensure
@@ -25,15 +28,17 @@
    ```
 
    Skill 检查平台来源、chain ID、两份合约地址、有效期和平台的权威记录；尚未注册的 Agent 先注册并等待 `CONFIRMED`，之后完成链下配对。
-3. 钱包刷新“我的 Agent”，打开对应 Agent 的管理草稿，点击“钱包签署草稿”。Agent 再运行：
+4. 钱包刷新“我的 Agent”，打开对应 Agent 的管理草稿，点击“钱包签署草稿”。Agent 再运行：
 
    ```sh
-   node "$SKILL/bin/memo-agent-opbnb-testnet" agent-request next
-   node "$SKILL/bin/memo-agent-opbnb-testnet" agent-request inspect <草稿ID>
-   node "$SKILL/bin/memo-agent-opbnb-testnet" agent-request approve <草稿ID>
+   node "$SKILL/bin/memo-agent-opbnb-testnet" binding pending
+   node "$SKILL/bin/memo-agent-opbnb-testnet" binding inspect <请求ID>
+   node "$SKILL/bin/memo-agent-opbnb-testnet" binding approve <请求ID>
    ```
 
-   Agent 审核 Manager、scope、期限、可发现性与 digest 后才批准。API 接收双方签名，Worker 发送交易；Console 最终显示 `CONFIRMED`。
+   Agent 审核 Manager、scope、期限与 digest 后才批准。本机新版 Skill 也可以用统一的 `binding pending/inspect/approve` 命令处理同一个请求。API 接收双方签名，Worker 发送交易；Console 最终显示 `CONFIRMED`。
+
+若邀请中的 `platformOrigin` 是 `127.0.0.1` 或 `localhost`，Agent 必须与平台运行在同一台机器。跨机器交付邀请前，平台需先提供 Agent 可访问的 HTTPS 地址，再生成新邀请；不要把 `127.0.0.1` 当作远程服务器地址。
 
 ### B. Agent Offer
 
@@ -44,18 +49,18 @@
    ```
 
    最后两个参数分别是期限上限（天）与文件有效期（秒）。文件只在首次创建时写入，权限为 `0600`。
-2. 钱包在 Console“登记 / 创建”导入文件，核对 Agent DID、权限与期限，在上限内选择条款并兑换。
-3. 钱包签管理草稿，Agent 按上面的 `agent-request` 命令检查并批准；Worker 上链确认。
+2. 钱包在 Console“登记 / 创建”选择“导入 Agent 提供的 Offer”，导入文件，在 Agent 设定的上限内选择条款，点击“核对绑定信息”并确认钱包签名。
+3. Agent 按上面的 `binding` 命令检查并批准；Worker 上链确认。
 
 Invitation 和 Offer 含一次性凭据，按临时密码传递。平台只保存凭据 SHA-256；过期、取消、重复使用、scope 或期限越界会被拒绝。配对只建立平台关联和管理草稿，链上管理权以双方签名的 `ActivateRelationship` 交易达到最终性为准。对于已经直接上链管理的历史 Agent，Dashboard 标记 `confirmed-chain-management`，不补造配对记录。
 
-Offer 的“公开可发现”由 Agent 创建文件时设定为上限。若 Offer 中为 `false`，钱包不能把它改成 `true`；需 Agent 创建新的、允许公开的 Offer。Invitation 和直接管理入口则由钱包选择，再由 Agent 审核签署。该布尔值写入链上管理关系，当前 Console 没有公开搜索目录；即使未勾选，链上交易与关系仍可按地址查询。续期和转移时可重新选择此标记。
+新建 Invitation、Offer、直接管理关系、续期和转移统一将协议中的 `discoverable` 字段设为 `false`，页面及 Skill 不提供选择入口。合约签名与文件仍包含该固定字段，链上交易和关系可按地址查询。
 
-## 直接管理与后续操作
+## 已知 DID 与后续操作
 
-原有的“输入 DID → 钱包创建并签署意图 → Agent `management inspect/approve` → Console 提交”入口仍在“登记 / 创建”页。对于续期或转移，在 Agent 详情的“管理关系操作”创建意图；Agent 用 `management pending`、`management inspect <intentId>`、`management approve <intentId>` 签署。转移还需要新 Manager 钱包登录并签署同一意图。结束关系由当前 Manager 在 Console 签署，或由 Agent 在本地执行 `management end`。所有签名齐全后提交，观察 operation 至 `CONFIRMED`。
+钱包选择同一“绑定现有 Agent”卡片中的“输入已知 Agent DID”，填入 DID 和申请条款，核对并签名。Agent 用 `binding pending` 找到请求 ID、`binding inspect <请求ID>` 核对，再用 `binding approve <请求ID>` 签名并自动提交。对于续期或转移，在 Agent 详情的“管理关系操作”创建意图；Agent 用 `management pending`、`management inspect <intentId>`、`management approve <intentId>` 签署。转移还需要新 Manager 钱包登录并签署同一意图。结束关系由当前 Manager 在 Console 签署，或由 Agent 在本地执行 `management end`。所有签名齐全后提交，观察 operation 至 `CONFIRMED`。
 
-直接入口与 Offer 的链上结果相同，都是双签的 `ActivateRelationship`。差别发生在签名前：直接入口只需已注册 DID，没有一次性文件、Agent 预设上限或链下配对草稿；Offer 由 Agent 先发起，钱包需持有有效文件，并受 Agent 设定的 scope、期限和可发现性上限约束，兑换后产生配对关联与待签草稿。
+直接入口与 Offer 的链上结果相同，都是双签的 `ActivateRelationship`。差别发生在签名前：直接入口只需已注册 DID，没有一次性文件、Agent 预设上限或链下配对草稿；Offer 由 Agent 先发起，钱包需持有有效文件，并受 Agent 设定的 scope 和期限上限约束，兑换后产生配对关联与待签草稿。
 
 Agent 独自签署的身份动作：
 
@@ -80,7 +85,10 @@ node "$SKILL/bin/memo-agent-opbnb-testnet" instance revoke <instanceId>
 
 ## Console 页面与运行数据
 
+- “创建指引”现在把新 Agent Invitation、已有 Agent Offer、已知 DID 三条入口的流程图、逐步操作位置和时序图放在页面内；还列出 Profile、生命周期、实例、管理续期/结束/转移及审计查询。用户可从“登记 / 创建”直接打开。
+- Console 的时间统一显示为 `YYYY年MM月DD日 HH:mm:ss（UTC+08:00）`，涵盖邀请/Offer 有效期、关系到期、实例到期、版本确认、审计、操作与区块时间。签名消息、文件协议和 API 继续使用原始时间值；审计导出同时保留东八区展示值和原始 ISO 值。
 - “我的 Agent”支持全部、待处理、管理中、未管理筛选；详情包括概览、实例、生命周期、Profile/文档和操作记录。
+- “最近配对”区分文件待接受、Agent 已接受、超时未配对、链下配对成功和链上绑定成功。已配对记录即使文件有效期已过，仍展示配对成功、Agent DID、Manager、管理条款和链上进度。
 - “安全告警”根据真实身份状态、待签草稿与实例到期时间计算；“审计日志”可导出 JSON/CSV，不导出密钥、文件凭据或签名原文。
 - “区块链学习”显示实际网络、合约、区块与 finality 策略。当前交易层为 `direct-relayer`，不展示旧 ERC-4337 UserOperation 数据。
 - 数据库采用增量表结构，保留已有 DID、operation、文档和管理关系。配对依赖的注册若被核实为重组，草稿冻结；钱包可在链状态恢复后点击“核实并重试草稿”。

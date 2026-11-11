@@ -16,7 +16,7 @@
       "properties": {
         "name": { "type": "string", "minLength": 1 },
         "caip2": { "type": "string", "pattern": "^eip155:[1-9][0-9]*$" },
-        "chainId": { "type": "integer", "minimum": 1, "maximum": 9007199254740991, "not": { "const": 985 } },
+        "chainId": { "const": 5611 },
         "genesisHash": { "$ref": "#/$defs/hash" },
         "publicRpcUrl": { "type": "string", "pattern": "^https://" },
         "publicWssUrl": { "type": "string", "pattern": "^wss://" },

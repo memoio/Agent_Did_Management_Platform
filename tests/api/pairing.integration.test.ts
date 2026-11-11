@@ -12,7 +12,7 @@ const run=process.env.TEST_DATABASE_URL?it:it.skip;
 run("completes invitation and offer journeys without replacing existing operations",async()=>{
   process.env.DATABASE_URL=process.env.TEST_DATABASE_URL;
   const db=new PlatformDb();await db.init();
-  await db.query("TRUNCATE pairing_idempotency,management_drafts,pairing_bindings,pairing_exchanges,agent_instances,agent_document_versions,audit_events,intent_signatures,operations,intents,sessions,challenges,agent_documents,chain_events,index_cursor CASCADE");
+  await db.query("TRUNCATE pairing_idempotency,management_drafts,pairing_bindings,pairing_exchanges,agent_instances,agent_document_versions,audit_events,intent_signatures,operations,intents,sessions,challenges,chain_events,index_cursor CASCADE");
   const agent=Wallet.createRandom(),other=Wallet.createRandom(),manager=Wallet.createRandom();
   let relationshipLive=false,relationshipManager=manager.address;
   const adapter={
@@ -35,6 +35,8 @@ run("completes invitation and offer journeys without replacing existing operatio
     await expect(pairing.inspectInvitation(agentAuth,{exchangeId:invitation.exchangeId as string,handle:"wrong"})).rejects.toThrow();
     await pairing.inspectInvitation(agentAuth,{exchangeId:invitation.exchangeId as string,handle});
     await pairing.claimInvitation(agentAuth,invitation.exchangeId as string,handle);
+    expect((await pairing.claimInvitation(agentAuth,invitation.exchangeId as string,handle)).state).toBe("CLAIMED");
+    await expect(pairing.claimInvitation(otherAuth,invitation.exchangeId as string,handle)).rejects.toThrow();
     const completed=await pairing.completeInvitation(agentAuth,invitation.exchangeId as string);
     expect(completed.state).toBe("PAIRED");
     expect((await pairing.completeInvitation(agentAuth,invitation.exchangeId as string)).bindingId).toBe(completed.bindingId);
@@ -43,10 +45,14 @@ run("completes invitation and offer journeys without replacing existing operatio
     await pairing.signDraft(managerAuth,completed.draftId,draft.intent.intentId,managerSignature);
     const request=(await pairing.nextRequest(agentAuth)).request;
     expect(request?.id).toBe(completed.draftId);
+    expect((await pairing.request(agentAuth,completed.draftId)).request?.intent_id).toBe(draft.intent.intentId);
+    await expect(pairing.request(otherAuth,completed.draftId)).rejects.toThrow();
+    expect((await platform.pendingManagement(agentAuth)).find(x=>x.intent.intentId===draft.intent.intentId)).toMatchObject({source:"pairing",requestId:completed.draftId,draftId:completed.draftId});
     await expect(pairing.decide(otherAuth,completed.draftId,{decision:"approve",signature:"0x"})).rejects.toThrow();
     const agentSignature=await agent.signTypedData(draft.intent.domain,draft.intent.types,draft.intent.message);
     const decision=await pairing.decide(agentAuth,completed.draftId,{decision:"approve",signature:agentSignature});
     expect(decision.operation?.state).toBe("SIGNED");
+    expect(await platform.intentOperation(managerAuth,draft.intent.intentId)).toMatchObject({operationId:decision.operation?.operationId,state:"SIGNED"});
     expect((await pairing.nextRequest(agentAuth)).request).toBeNull();
     const offerHandle="temporary-offer-"+randomUUID(),offerHash=createHash("sha256").update(offerHandle).digest("hex");
     const offer=await pairing.offer(otherAuth,{handleHash:offerHash,maxScopes:["agent.read","profile.update"],maxTermSeconds:7*86400,ttlSeconds:900},"offer-key-0001");
@@ -70,6 +76,8 @@ run("completes invitation and offer journeys without replacing existing operatio
     relationshipLive=true;
     const dashboard=await platform.dashboard(managerAuth);
     expect(dashboard.counts.total).toBe(2);
+    expect(dashboard.pairingExchanges.find(x=>x.id===invitation.exchangeId)).toMatchObject({state:"PAIRED",agent_did:completed.agentDid,binding_id:completed.bindingId,draft_id:completed.draftId,draft_state:"SUBMITTED",operation_state:"SIGNED"});
+    expect(dashboard.pairingExchanges.find(x=>x.id===offer.exchangeId)).toMatchObject({state:"PAIRED",agent_did:redeemed.agentDid,draft_id:redeemed.draftId,draft_state:"AWAITING_WALLET_SIGNATURE"});
     expect(dashboard.agents.some(x=>x.identity.agentDid===completed.agentDid&&x.associationSource==="pairing")).toBe(true);
     const registry=await platform.registryActionIntent(agentAuth,{actionType:"UpdateProfile",profile:{name:"Updated Agent"}});
     const registryOp=await platform.submitRegistryAction(agentAuth,{intentId:registry.intentId,signature:await agent.signTypedData(registry.domain,registry.types,registry.message)},"profile-key-01");
